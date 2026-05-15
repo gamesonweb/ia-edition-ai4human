@@ -14,13 +14,13 @@ Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 
 > [!NOTE]
 > Testé sur un Mac Mini M4 2025 — Chrome recommandé pour des performances optimales (Moins conseillé d'utilisé Safari !)
-> Lien du site de notre jeu : [https://akiirran-babylon-js.vercel.app](https://blackout-gow-ai4human.vercel.app)
+> Lien du site de notre jeu : [https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)
 ---
 
 ## Lien du site pour Jouer à Blackout
 
 Plongez dans l’univers de Blackout et tentez de survivre dans un monde envahi par des IA hostiles.
-[https://akiirran-babylon-js.vercel.app](https://blackout-gow-ai4human.vercel.app)
+[https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)
 
 ## À propos de nous
 
