@@ -1,0 +1,1 @@
+import{t as e}from"./openpbrMaterialLoadingAdapter-NZQ_SS65.js";export{e as OpenPBRMaterialLoadingAdapter};

@@ -1,0 +1,186 @@
+/* ===== Mini-map (radar) ===== */
+#mini-map {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 200px;
+  height: 200px;
+  z-index: 100;
+  border-radius: 1%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  cursor: pointer;
+}
+
+#mini-map .map-img {
+  position: absolute;
+  inset: 0;
+  background-image: url('/img/map/map.png');
+  background-size: 400%;
+  background-repeat: no-repeat;
+  filter: brightness(0.95);
+}
+
+#mini-map .player {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+}
+
+#mini-map .player::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.85);
+}
+
+#mini-map .player::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  margin-left: -4px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 7px solid #fff;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+#mini-map .label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  white-space: nowrap;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* ===== Expanded map ===== */
+#map-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+#map-overlay.open { opacity: 1; pointer-events: auto; }
+
+#map-expanded {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 80vmin;
+  height: 80vmin;
+  max-width: 720px;
+  max-height: 720px;
+  transform: translate(-50%, -50%) scale(0.96);
+  background: rgba(10, 12, 16, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 1001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+#map-expanded.open {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+#map-expanded .full-img {
+  position: absolute;
+  inset: 0;
+  background: url('/img/map/map.png') center/contain no-repeat;
+}
+
+#map-expanded .player-mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  pointer-events: none;
+}
+
+#map-expanded .player-mark::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+}
+
+#map-expanded .player-mark::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  margin-left: -5px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #fff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+}
+
+#map-expanded .title {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+#map-expanded .close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+#map-expanded .close:hover {
+  background: rgba(220, 60, 60, 0.55);
+  transform: scale(1.08);
+}

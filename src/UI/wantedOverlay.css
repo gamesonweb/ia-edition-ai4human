@@ -1,0 +1,241 @@
+/* ===== Wanted Overlay — styles spécifiques ===== */
+
+/* ── Base overlay (duplique les règles #hacking-overlay pour l'ID propre) ── */
+#wanted-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #f3f6ff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+}
+#wanted-overlay.open    { opacity: 1; pointer-events: auto; }
+#wanted-overlay.closing { opacity: 0; pointer-events: none; }
+#wanted-overlay.open .hk-window { transform: translateY(0) scale(1); }
+
+/* Surcharge du titre de fenêtre */
+#wanted-overlay .hk-title i { color: #F87171; }
+#wanted-overlay .hk-foot-dot { background: #F87171; box-shadow: 0 0 8px #F87171; }
+
+/* ── Liste des personnes recherchées ── */
+.wd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.wd-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: rgba(14, 18, 36, 0.6);
+  border: 1px solid rgba(124, 156, 255, 0.14);
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: wd-card-in 0.35s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.07s);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+@keyframes wd-card-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.wd-card:hover {
+  border-color: rgba(124, 156, 255, 0.35);
+  background: rgba(20, 26, 50, 0.75);
+}
+.wd-card.human {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(28, 22, 8, 0.65);
+}
+.wd-card.human:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(35, 28, 10, 0.8);
+}
+
+/* Avatar */
+.wd-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 0 0 52px;
+  border: 1px solid rgba(124, 156, 255, 0.3);
+  background: rgba(8, 10, 22, 0.85);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  color: rgba(124, 156, 255, 0.6);
+}
+.wd-card.human .wd-avatar {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+.wd-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+
+/* Infos */
+.wd-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wd-id {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(199, 210, 254, 0.55);
+  text-transform: uppercase;
+}
+.wd-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f3f6ff;
+  letter-spacing: 0.4px;
+}
+.wd-badges { display: flex; gap: 6px; align-items: center; }
+
+.wd-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid;
+  font-weight: 600;
+}
+.wd-badge.critique  { color: #FCA5A5; border-color: rgba(248, 113, 113, 0.4); background: rgba(248, 113, 113, 0.1); }
+.wd-badge.haute     { color: #FCD34D; border-color: rgba(252, 211, 77, 0.4);  background: rgba(252, 211, 77, 0.1); }
+.wd-badge.moderee   { color: #86EFAC; border-color: rgba(74, 222, 128, 0.35); background: rgba(74, 222, 128, 0.1); }
+.wd-badge.human-tag { color: #FCD34D; border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.12);
+                       animation: wd-blink 1.4s ease-in-out infinite; }
+@keyframes wd-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Fiche détaillée ── */
+.wd-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 640px) { .wd-detail-grid { grid-template-columns: 1fr; } }
+
+.wd-detail-photo {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  aspect-ratio: 1 / 1;
+  background: #080a16;
+}
+.wd-detail-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wd-detail-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(4, 6, 14, 0.7));
+  pointer-events: none;
+}
+
+.wd-scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FBBF24, transparent);
+  box-shadow: 0 0 10px #FBBF24;
+  animation: wd-scan 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes wd-scan {
+  0%   { top: 0%;  opacity: 0.3; }
+  50%  { top: 95%; opacity: 1;   }
+  100% { top: 0%;  opacity: 0.3; }
+}
+
+.wd-detail-fields { display: flex; flex-direction: column; gap: 10px; }
+.wd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: rgba(14, 18, 36, 0.55);
+  border: 1px solid rgba(124, 156, 255, 0.1);
+  border-radius: 6px;
+}
+.wd-field-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(167, 139, 250, 0.65);
+}
+.wd-field-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f6ff;
+  line-height: 1.35;
+}
+.wd-field-value.accent { color: #FCD34D; }
+.wd-field-value.danger { color: #FCA5A5; }
+.wd-field-value.university {
+  color: #67E8F9;
+  font-style: italic;
+}
+
+/* ── Carte déverrouillée ── */
+.wd-card.unlocked {
+  opacity: 0.6;
+  border-color: rgba(74, 222, 128, 0.3) !important;
+  background: rgba(10, 22, 14, 0.55) !important;
+}
+.wd-badge.unlocked-tag {
+  color: #4ADE80;
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.1);
+  gap: 5px;
+}
+.wd-done-badge {
+  font-size: 22px;
+  color: #4ADE80;
+  filter: drop-shadow(0 0 6px rgba(74,222,128,0.5));
+  flex: 0 0 auto;
+}
+
+/* ── Message restant / terminé ── */
+.wd-remaining, .wd-all-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 4px 0;
+}
+.wd-remaining {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #FCD34D;
+}
+.wd-all-done {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ADE80;
+}
+
+/* ── Succès ── */
+.wd-success-icon {
+  font-size: 48px;
+  color: #4ADE80;
+  filter: drop-shadow(0 0 18px rgba(74,222,128,0.6));
+  animation: hk-pop 0.45s cubic-bezier(.34,1.56,.64,1) backwards;
+}

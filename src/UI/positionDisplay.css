@@ -1,0 +1,36 @@
+#position-display {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 100;
+  pointer-events: none;
+  user-select: none;
+  padding: 10px 14px;
+  min-width: 130px;
+  background: linear-gradient(to bottom, rgba(8, 6, 4, 0.82), rgba(8, 6, 4, 0.55));
+  border: 1px solid rgba(255, 106, 0, 0.4);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  font-family: 'Courier New', Courier, monospace;
+  color: #e8e0d4;
+}
+
+.position-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.position-label {
+  color: #FF6A00;
+  font-weight: 700;
+  margin-right: 14px;
+  text-shadow: 0 0 4px rgba(255, 106, 0, 0.6);
+}
+
+.position-value {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}

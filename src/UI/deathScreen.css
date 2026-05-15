@@ -1,0 +1,78 @@
+#death-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+#death-screen.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#death-screen .label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(248, 113, 113, 0.75);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+#death-screen .title {
+  font-size: 52px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #EF4444;
+  text-shadow:
+    0 0 22px rgba(239, 68, 68, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.85);
+  margin: 0;
+  line-height: 1.1;
+}
+
+#death-screen .subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+#death-screen .respawn {
+  margin-top: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  font-family: inherit;
+}
+
+#death-screen .respawn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #fff;
+  transform: scale(1.04);
+}

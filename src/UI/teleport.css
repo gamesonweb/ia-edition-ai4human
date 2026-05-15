@@ -1,0 +1,42 @@
+#teleport-btn {
+  position: fixed;
+  top: 16px;
+  left: 56px;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.15s ease;
+  user-select: none;
+}
+
+#teleport-btn:hover {
+  transform: scale(1.08);
+  color: #fff;
+}
+
+#teleport-btn:active {
+  transform: scale(0.95);
+}
+
+#teleport-btn .icon {
+  font-size: 17px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
+}
+
+/* Mini-flash visuel quand on teleport */
+#teleport-btn.flash .icon {
+  animation: tp-flash 0.35s ease-out;
+}
+
+@keyframes tp-flash {
+  0%   { color: #fff; filter: drop-shadow(0 0 8px rgba(125, 240, 255, 0.95)); }
+  100% { color: rgba(255, 255, 255, 0.95); filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85)); }
+}

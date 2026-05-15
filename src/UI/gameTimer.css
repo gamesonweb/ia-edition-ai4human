@@ -1,0 +1,71 @@
+#game-timer {
+  position: fixed;
+  top: 58px; /* juste sous le compass (54px) */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#game-timer.visible { opacity: 1; }
+
+.gt-label {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.gt-value {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(124, 156, 255, 0.6);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+  line-height: 1;
+}
+
+#game-timer.warning .gt-value {
+  color: #FBBF24;
+  text-shadow: 0 0 14px rgba(251, 191, 36, 0.7);
+  animation: gt-blink 0.7s ease-in-out infinite;
+}
+
+#game-timer.danger .gt-value {
+  color: #F87171;
+  text-shadow: 0 0 16px rgba(248, 113, 113, 0.8);
+  animation: gt-blink 0.4s ease-in-out infinite;
+}
+
+/* Barre de progression */
+.gt-bar-track {
+  width: 120px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.gt-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #7C9CFF, #67E8F9);
+  transition: width 0.9s linear, background 0.3s ease;
+}
+#game-timer.warning .gt-bar-fill { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+#game-timer.danger  .gt-bar-fill { background: linear-gradient(90deg, #EF4444, #F87171); }
+
+@keyframes gt-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}

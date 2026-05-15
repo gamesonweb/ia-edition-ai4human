@@ -1,0 +1,187 @@
+#player-stats {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: none;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (max-width: 768px) {
+  #player-stats { left: 14px; bottom: 14px; gap: 4px; }
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ----- Icône (gauche) ----- */
+.bar-icon {
+  width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
+}
+
+.bar-icon { color: #fff; }
+
+@media (max-width: 768px) {
+  .bar-icon { font-size: 15px; width: 18px; }
+}
+
+/* ----- Barre (parallélogramme à la Fortnite) ----- */
+.bar-track {
+  position: relative;
+  width: 220px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.7);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.65));
+}
+
+@media (max-width: 768px) {
+  .bar-track { width: 160px; height: 14px; }
+}
+
+.bar-track::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  z-index: 2;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.stat-row.shield .bar-fill {
+  background: linear-gradient(180deg, #7DF0FF 0%, #1FB6F0 45%, #0079B5 100%);
+  box-shadow: inset 0 0 6px rgba(125, 240, 255, 0.5);
+}
+
+.stat-row.health .bar-fill {
+  background: linear-gradient(180deg, #B7FFB0 0%, #2EDB3F 45%, #0E7A1F 100%);
+  box-shadow: inset 0 0 6px rgba(120, 255, 130, 0.45);
+}
+
+.stat-row.health.mid .bar-fill {
+  background: linear-gradient(180deg, #FFE38A 0%, #F59E0B 45%, #B45309 100%);
+  box-shadow: inset 0 0 6px rgba(255, 200, 100, 0.45);
+}
+
+.stat-row.health.low .bar-fill {
+  background: linear-gradient(180deg, #FFB0B0 0%, #EF4444 45%, #991B1B 100%);
+  box-shadow: inset 0 0 6px rgba(255, 100, 100, 0.5);
+}
+
+/* ----- Valeur numérique (droite) ----- */
+.bar-value {
+  min-width: 38px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 2px rgba(0, 0, 0, 0.95);
+}
+
+@media (max-width: 768px) {
+  .bar-value { font-size: 17px; min-width: 30px; }
+}
+
+.stat-row.health.low .bar-value { color: #FFE0E0; }
+
+/* ===== Alerte dégâts ===== */
+#damage-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 0 0 rgba(220, 38, 38, 0);
+  transition: opacity 0.35s ease;
+}
+
+#damage-vignette.active {
+  opacity: 1;
+  animation: dmg-vignette-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes dmg-vignette-pulse {
+  0%, 100% { box-shadow: inset 0 0 90px 18px rgba(220, 38, 38, 0.42); }
+  50%      { box-shadow: inset 0 0 150px 38px rgba(239, 68, 68, 0.78); }
+}
+
+.bar-value.alert {
+  color: #FCA5A5 !important;
+  text-shadow:
+    0 0 10px rgba(239, 68, 68, 0.95),
+    0 0 3px rgba(220, 38, 38, 0.9),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  animation: dmg-value-pulse 0.45s ease-in-out infinite;
+  transform-origin: center;
+  display: inline-block;
+}
+
+@keyframes dmg-value-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.22); }
+}
+
+/* ===== Flash impact (balle ennemie reçue) ===== */
+#damage-hit-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 152;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#damage-hit-flash.active {
+  animation: dmg-hit-flash 0.4s ease-out forwards;
+}
+
+@keyframes dmg-hit-flash {
+  0%   { opacity: 1; box-shadow: inset 0 0 130px 50px rgba(239, 68, 68, 0.92); }
+  60%  { opacity: 1; box-shadow: inset 0 0 80px 25px rgba(239, 68, 68, 0.55); }
+  100% { opacity: 0; box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.bar-value.hit {
+  animation: dmg-num-hit 0.38s ease-out forwards !important;
+  transform-origin: center;
+  display: inline-block;
+}
+
+@keyframes dmg-num-hit {
+  0%   { color: #FCA5A5; transform: scale(1.3); text-shadow: 0 0 14px rgba(239,68,68,1), 0 2px 4px rgba(0,0,0,0.9); }
+  100% { color: #fff;    transform: scale(1);   text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+}
