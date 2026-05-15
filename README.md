@@ -8,16 +8,19 @@
 Nous sommes trois étudiants passionnés qui participons au concours **Games On Web 2026** avec notre jeu **BLACKOUT**.\
 L'intégralité du code source est disponible sur ce dépôt GitHub.
 
-## 🎮 Jouer
+## Jouer
 
 Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 
 > [!NOTE]
 > Testé sur un Mac Mini M4 2025 — Chrome recommandé pour des performances optimales (Moins conseillé d'utilisé Safari !)
-> Lien du site de notre jeu : [https://akiirran-babylon-js.vercel.app]((https://akiirran-babylon-js.vercel.app))
+> Lien du site de notre jeu : [https://akiirran-babylon-js.vercel.app](https://akiirran-babylon-js.vercel.app)
 ---
 
-## 📚 À propos de nous
+## Lien du site pour Jouer à Blackout
+[https://akiirran-babylon-js.vercel.app](https://akiirran-babylon-js.vercel.app)
+
+## À propos de nous
 
 Nous sommes trois étudiants réunis autour d'un objectif commun : concevoir **notre jeu vidéo** dans le cadre du concours Games On Web 2026.
 
