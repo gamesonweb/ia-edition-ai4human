@@ -18,6 +18,8 @@ Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 ---
 
 ## Lien du site pour Jouer à Blackout
+
+Plongez dans l’univers de Blackout et tentez de survivre dans un monde envahi par des IA hostiles.
 [https://akiirran-babylon-js.vercel.app](https://akiirran-babylon-js.vercel.app)
 
 ## À propos de nous
