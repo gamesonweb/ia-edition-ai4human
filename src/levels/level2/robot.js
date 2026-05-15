@@ -555,7 +555,7 @@ export async function spawnRobot(scene, {
     pickedUp = true
     hidePickupSign()
     root.setEnabled(false)
-    inventory?.setItem(0, { name: 'Robot', rarity: 'rare' })
+    inventory?.setItem(0, { name: 'Robot', icon: '/img/inventaire/robot.png', rarity: 'rare' })
     notifications?.show({
       icon:    'fa-box-archive',
       variant: 'success',

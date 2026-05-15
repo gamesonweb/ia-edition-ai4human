@@ -27,7 +27,7 @@
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
 }
 
-/* ----- Overlay pause ----- */
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
 #pause-overlay {
   position: fixed;
   inset: 0;
@@ -36,10 +36,8 @@
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -51,20 +49,33 @@
   pointer-events: auto;
 }
 
-#pause-overlay .title {
+/* ── Panel principal ─────────────────────────────────────────────────────── */
+.pause-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.pause-main.hidden { display: none; }
+
+.pause-main .title {
   color: #fff;
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 0.32em;
   text-transform: uppercase;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  margin-bottom: 4px;
 }
 
-#pause-overlay .resume {
+.pause-action {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 20px;
+  width: 160px;
+  justify-content: center;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 4px;
@@ -78,7 +89,144 @@
   font-family: inherit;
 }
 
-#pause-overlay .resume:hover {
+.pause-action:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: #fff;
+}
+
+/* ── Panel réglages ──────────────────────────────────────────────────────── */
+.pause-settings {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  width: 300px;
+}
+
+.pause-settings.visible { display: flex; }
+
+.settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+  font-family: inherit;
+  align-self: flex-start;
+}
+
+.settings-back:hover { color: #fff; }
+
+.settings-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  margin-top: -8px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.settings-label i { margin-right: 4px; }
+
+/* Volume row */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  cursor: pointer;
+}
+
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.settings-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.settings-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Toggle buttons */
+.settings-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 7px 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.toggle-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+  color: #fff;
 }

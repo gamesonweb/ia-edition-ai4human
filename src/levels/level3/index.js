@@ -139,7 +139,7 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
     getHero,
     tube:      TUBE,
     onPickup: () => {
-      inventory?.setItem(0, { name: 'Carte mère', rarity: 'epic' })
+      inventory?.setItem(0, { name: 'Carte mère', icon: '/img/inventaire/mother_board.png', rarity: 'epic' })
       notifications?.show({
         id:       'mb-progress',
         icon:     'fa-microchip',
@@ -161,7 +161,7 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
     getHero,
     tube:      TUBE,
     onPickup: () => {
-      inventory?.setItem(1, { name: 'Disque', rarity: 'epic' })
+      inventory?.setItem(1, { name: 'Disque', icon: '/img/inventaire/disk.png', rarity: 'epic' })
       notifications?.show({
         id:       'disk-progress',
         icon:     'fa-compact-disc',

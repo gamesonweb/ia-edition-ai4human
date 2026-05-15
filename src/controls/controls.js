@@ -131,11 +131,19 @@ export function setupControls(scene, hero, animations, camera, canvas) {
   impactMat.emissiveColor = new Color3(1, 0.25, 0.05)
   impactMat.disableLighting = true
 
+  const shootSfx = new Audio('/music/shoot.mp3')
+  shootSfx.volume = 0.5
+
   const fireBullet = () => {
     if (scene.metadata?.dead || scene.metadata?.paused) return
     const now = performance.now()
     if (now - lastFireTime < FIRE_COOLDOWN_MS) return
     lastFireTime = now
+
+    // Son de tir
+    const sfx = shootSfx.cloneNode()
+    sfx.volume = 0.5
+    sfx.play().catch(() => {})
 
     // Direction de tir = de la caméra vers sa cible (ce que vise le crosshair)
     const dir = new Vector3(
@@ -324,10 +332,11 @@ export function setupControls(scene, hero, animations, camera, canvas) {
     const forward = new Vector3(-Math.cos(camera.alpha), 0, -Math.sin(camera.alpha))
     const right   = new Vector3(-Math.sin(camera.alpha), 0,  Math.cos(camera.alpha))
 
-    const fwd = inputMap[keys.FORWARD]  || inputMap[arrows.FORWARD]
-    const bwd = inputMap[keys.BACKWARD] || inputMap[arrows.BACKWARD]
-    const lft = inputMap[keys.LEFT]     || inputMap[arrows.LEFT]
-    const rgt = inputMap[keys.RIGHT]    || inputMap[arrows.RIGHT]
+    const activeKeys = GAME_CONFIG.KEYBOARD.CONTROLS[GAME_CONFIG.KEYBOARD.LAYOUT]
+    const fwd = inputMap[activeKeys.FORWARD]  || inputMap[arrows.FORWARD]
+    const bwd = inputMap[activeKeys.BACKWARD] || inputMap[arrows.BACKWARD]
+    const lft = inputMap[activeKeys.LEFT]     || inputMap[arrows.LEFT]
+    const rgt = inputMap[activeKeys.RIGHT]    || inputMap[arrows.RIGHT]
 
     let fwdVec    = Vector3.Zero()
     let strafeVec = Vector3.Zero()

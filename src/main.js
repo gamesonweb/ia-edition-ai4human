@@ -101,7 +101,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   const statsBar        = setupStatsBar()
   const inventory       = setupInventoryBar(scene)
   const keybindings     = setupKeybindings()
-  const pauseButton     = setupPauseButton(scene)
+  const pauseButton     = setupPauseButton(scene, { engine, camera })
   const graphics        = setupGraphicsSettings(engine)
   const playerStats     = setupPlayerStats()
   const teleport        = setupTeleport({ getHero: () => heroRef })
@@ -114,103 +114,166 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
 
   const SPAWN = { x: 29.28, y: 0.14, z: 322.42 }
 
-  const respawn = () => {
+  let restartCurrentLevel = null
+
+  const respawn = async () => {
     if (heroRef) heroRef.position.set(SPAWN.x, SPAWN.y, SPAWN.z)
     playerStats.setAlert(false)
     playerStats.setHealth(100)
     playerStats.setShield(100)
     scene.metadata.dead   = false
     scene.metadata.paused = false
+    await restartCurrentLevel?.()
   }
 
   const deathScreen = setupDeathScreen({ onRespawn: respawn })
+
+  const deathSfx = new Audio('/music/death.mp3')
+  deathSfx.volume = 0.7
 
   playerStats.setOnDeath(() => {
     playerStats.setAlert(false)
     if (!scene.metadata) scene.metadata = {}
     scene.metadata.dead = true
     if (document.pointerLockElement) document.exitPointerLock()
+    deathSfx.currentTime = 0
+    deathSfx.play().catch(() => {})
     deathScreen.show()
   })
 
   // 4. Chargement parallèle map + joueur + level 1
+  // Les startLevelN sont définis ici (avant le Promise.all) pour que
+  // chaque onComplete puisse référencer le suivant, et pour permettre
+  // le restart de la manche en cours lors d'un respawn.
+
+  const startLevel9 = async () => {
+    level9Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel9
+    level9Handle = await loadLevel9(scene, {
+      getHero: () => heroRef,
+      notifications,
+      onComplete: () => notifications?.show({
+        icon: 'fa-circle-check', variant: 'success',
+        title: 'Jeu terminé', message: 'Vous avez complété toutes les manches !', duration: 8000,
+      }),
+    })
+    showLevelIntro(LEVEL9_INTRO)
+  }
+
+  const startLevel8 = async () => {
+    level8Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel8
+    level8Handle = await loadLevel8(scene, {
+      getHero: () => heroRef,
+      notifications,
+      onComplete: startLevel9,
+    })
+    showLevelIntro(LEVEL8_INTRO)
+  }
+
+  const startLevel7 = async () => {
+    level7Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel7
+    level7Handle = await loadLevel7(scene, {
+      getHero: () => heroRef,
+      notifications,
+      inventory,
+      onComplete: startLevel8,
+    })
+    showLevelIntro(LEVEL7_INTRO)
+  }
+
+  const startLevel6 = async () => {
+    level6Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel6
+    level6Handle = await loadLevel6(scene, {
+      getHero:  () => heroRef,
+      notifications,
+      damage:   (amount) => playerStats.damage(amount),
+      inventory,
+      onComplete: startLevel7,
+    })
+    showLevelIntro(LEVEL6_INTRO)
+  }
+
+  const startLevel5 = async () => {
+    level5Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel5
+    level5Handle = await loadLevel5(scene, {
+      getHero: () => heroRef,
+      notifications,
+      onComplete: startLevel6,
+    })
+    showLevelIntro(LEVEL5_INTRO)
+  }
+
+  const startLevel4 = async () => {
+    level4Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel4
+    level4Handle = await loadLevel4(scene, {
+      getHero: () => heroRef,
+      notifications,
+      robot: level2Handle?.robot,
+      onComplete: startLevel5,
+    })
+    showLevelIntro(LEVEL4_INTRO)
+  }
+
+  const startLevel3 = async () => {
+    level3Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel3
+    level3Handle = await loadLevel3(scene, {
+      getHero: () => heroRef,
+      notifications,
+      inventory,
+      robot: level2Handle?.robot,
+      onComplete: startLevel4,
+    })
+    showLevelIntro(LEVEL3_INTRO)
+  }
+
+  const startLevel2 = async () => {
+    level2Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel2
+    level2Handle = await loadLevel2(scene, {
+      getHero: () => heroRef,
+      notifications,
+      damage: (amount) => playerStats.damage(amount),
+      inventory,
+      onComplete: startLevel3,
+    })
+    showLevelIntro(LEVEL2_INTRO)
+  }
+
+  const startLevel1 = async () => {
+    level1Handle?.dispose?.()
+    inventory.clear()
+    restartCurrentLevel = startLevel1
+    level1Handle = await loadLevel1(scene, {
+      getHero: () => heroRef,
+      notifications,
+      inventory,
+      onComplete: startLevel2,
+    })
+    showLevelIntro(LEVEL1_INTRO)
+  }
+
   const [, player, level1] = await Promise.all([
     loadMapParts(scene),
     createPlayer(scene, { character }),
     loadLevel1(scene, {
       getHero: () => heroRef,
       notifications,
-      onComplete: async () => {
-        level2Handle = await loadLevel2(scene, {
-          getHero: () => heroRef,
-          notifications,
-          damage: (amount) => playerStats.damage(amount),
-          inventory,
-          onComplete: async () => {
-            level3Handle = await loadLevel3(scene, {
-              getHero: () => heroRef,
-              notifications,
-              inventory,
-              robot: level2Handle?.robot,
-              onComplete: async () => {
-                level4Handle = await loadLevel4(scene, {
-                  getHero: () => heroRef,
-                  notifications,
-                  robot: level2Handle?.robot,
-                  onComplete: async () => {
-                    level5Handle = await loadLevel5(scene, {
-                      getHero:       () => heroRef,
-                      notifications,
-                      onComplete: async () => {
-                        level6Handle = await loadLevel6(scene, {
-                          getHero:  () => heroRef,
-                          notifications,
-                          damage:   (amount) => playerStats.damage(amount),
-                          onComplete: async () => {
-                            level7Handle = await loadLevel7(scene, {
-                              getHero:  () => heroRef,
-                              notifications,
-                              onComplete: async () => {
-                                level8Handle = await loadLevel8(scene, {
-                                  getHero:  () => heroRef,
-                                  notifications,
-                                  onComplete: async () => {
-                                    level9Handle = await loadLevel9(scene, {
-                                      getHero:  () => heroRef,
-                                      notifications,
-                                      onComplete: () => {
-                                        notifications?.show({
-                                          icon:    'fa-circle-check',
-                                          variant: 'success',
-                                          title:   'Jeu terminé',
-                                          message: 'Vous avez complété toutes les manches !',
-                                          duration: 8000,
-                                        })
-                                      },
-                                    })
-                                    showLevelIntro(LEVEL9_INTRO)
-                                  },
-                                })
-                                showLevelIntro(LEVEL8_INTRO)
-                              },
-                            })
-                            showLevelIntro(LEVEL7_INTRO)
-                          },
-                        })
-                        showLevelIntro(LEVEL6_INTRO)
-                      },
-                    })
-                    showLevelIntro(LEVEL5_INTRO)
-                  },
-                })
-                showLevelIntro(LEVEL4_INTRO)
-              },
-            })
-            showLevelIntro(LEVEL3_INTRO)
-          },
-        })
-        showLevelIntro(LEVEL2_INTRO)
-      },
+      inventory,
+      onComplete: startLevel2,
     }),
     setupPolice(scene, {
       getHero:  () => heroRef,
@@ -219,11 +282,32 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     }),
     spawnPNJFleet(scene, {
       file:  'pnj_car.glb',
-      scale: 1,
+      scale: 1.5,
       cars: [
-        { pointA: { x:  176.70, y: 0, z: 283.38 }, pointB: { x: -206.17, y: 0, z: 283.38 }, speed: 15, startRatio: 0    },
-        { pointA: { x:  176.70, y: 0, z: 283.38 }, pointB: { x: -206.17, y: 0, z: 283.38 }, speed: 18, startRatio: 0.33 },
-        { pointA: { x:  176.70, y: 0, z: 283.38 }, pointB: { x: -206.17, y: 0, z: 283.38 }, speed: 12, startRatio: 0.66 },
+        // Route existante (z≊283) — 2 voitures seules, espacement 0.5
+        { pointA: { x:  176.70, y: 0.14, z:  283.38 }, pointB: { x: -206.17, y: 0.14, z:  283.38 }, speed: 15, startRatio: 0   },
+        { pointA: { x:  176.70, y: 0.14, z:  283.38 }, pointB: { x: -206.17, y: 0.14, z:  283.38 }, speed: 15, startRatio: 0.5 },
+        // Axe vertical est — 4 PNJs (voitures 0/0.5 + scooters 0.25/0.75), même vitesse
+        { pointA: { x:   87.97, y: 0.14, z:  273.04 }, pointB: { x:   84.81, y: 0.14, z:  -97.93 }, speed: 14, startRatio: 0   },
+        { pointA: { x:   87.97, y: 0.14, z:  273.04 }, pointB: { x:   84.81, y: 0.14, z:  -97.93 }, speed: 14, startRatio: 0.5 },
+        // Axe horizontal sud — 4 PNJs (voitures 0/0.5 + scooters 0.25/0.75), même vitesse
+        { pointA: { x: -138.87, y: 0.14, z:  187.24 }, pointB: { x:  168.43, y: 0.14, z:  183.94 }, speed: 15, startRatio: 0   },
+        { pointA: { x: -138.87, y: 0.14, z:  187.24 }, pointB: { x:  168.43, y: 0.14, z:  183.94 }, speed: 15, startRatio: 0.5 },
+      ],
+    }),
+    spawnPNJFleet(scene, {
+      file:  'pnjscooter_1.glb',
+      scale: 1.5,
+      cars: [
+        // Axe vertical est — intercalés entre les voitures (0.25/0.75)
+        { pointA: { x:   87.97, y: 0.14, z:  273.04 }, pointB: { x:   84.81, y: 0.14, z:  -97.93 }, speed: 14, startRatio: 0.25 },
+        { pointA: { x:   87.97, y: 0.14, z:  273.04 }, pointB: { x:   84.81, y: 0.14, z:  -97.93 }, speed: 14, startRatio: 0.75 },
+        // Axe horizontal centre — 2 scooters seuls, espacement 0.5
+        { pointA: { x:  168.71, y: 0.14, z:  -15.53 }, pointB: { x: -193.72, y: 0.14, z:  -16.34 }, speed: 14, startRatio: 0   },
+        { pointA: { x:  168.71, y: 0.14, z:  -15.53 }, pointB: { x: -193.72, y: 0.14, z:  -16.34 }, speed: 14, startRatio: 0.5 },
+        // Axe horizontal sud — intercalés entre les voitures (0.25/0.75)
+        { pointA: { x: -138.87, y: 0.14, z:  187.24 }, pointB: { x:  168.43, y: 0.14, z:  183.94 }, speed: 15, startRatio: 0.25 },
+        { pointA: { x: -138.87, y: 0.14, z:  187.24 }, pointB: { x:  168.43, y: 0.14, z:  183.94 }, speed: 15, startRatio: 0.75 },
       ],
     }),
   ])
@@ -232,8 +316,8 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
 
   // Musique de jeu en boucle
   const bgm = new Audio('/music/music_game.mp3')
-  bgm.loop   = true
-  bgm.volume = 0.4
+  bgm.loop = true
+  pauseButton.setAudio(bgm)
   bgm.play().catch(() => {})
 
   // Pré-chauffe le cache HTTP des assets des niveaux suivants
@@ -246,13 +330,12 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   // Assets level 3 : composants à récupérer
   setTimeout(() => prefetch('/level/level2/mother_board.glb', '/level/level2/disk.glb'), 8000)
 
-  heroRef      = player.hero
-  level1Handle = level1
+  heroRef               = player.hero
+  level1Handle          = level1
+  restartCurrentLevel   = startLevel1
   setupControls(scene, player.hero, player.animations, camera, canvas)
   attachChunkLoop(scene, () => heroRef?.position ?? null)
   attachPNJLoop(scene,   () => heroRef?.position ?? null)
-
-  if (scene.metadata?.currentLevel === 1) showLevelIntro(LEVEL1_INTRO)
 
   setupVisibilityManager(scene, camera, player.meshes)
 
@@ -283,6 +366,10 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     }
     scene.render()
   })
+
+  return () => {
+    if (scene.metadata?.currentLevel === 1) showLevelIntro(LEVEL1_INTRO)
+  }
 }
 
 // ---- Écran d'accueil ----

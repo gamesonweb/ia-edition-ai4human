@@ -35,46 +35,74 @@ function makeSlot(index) {
   card.background   = COLOR_BG
 
   const icon = new Image(`slot-icon-${index}`, '')
-  icon.width   = '64%'
-  icon.height  = '64%'
-  icon.stretch = Image.STRETCH_UNIFORM
-  icon.alpha   = 0
+  icon.width                = '62%'
+  icon.height               = '58%'
+  icon.stretch              = Image.STRETCH_UNIFORM
+  icon.alpha                = 0
+  icon.verticalAlignment    = Control.VERTICAL_ALIGNMENT_TOP
+  icon.paddingTop           = '10px'
+  icon.zIndex               = 0
   card.addControl(icon)
 
   const number = new TextBlock(`slot-num-${index}`, String(index + 1))
-  number.width      = '14px'
-  number.height     = '14px'
-  number.fontSize   = 10
-  number.fontFamily = FONT_FAMILY
-  number.fontWeight = '500'
-  number.color      = 'rgba(255, 255, 255, 0.45)'
+  number.width        = '16px'
+  number.height       = '16px'
+  number.fontSize     = 11
+  number.fontFamily   = FONT_FAMILY
+  number.fontWeight   = '700'
+  number.color        = 'rgba(255,255,255,0.7)'
+  number.shadowColor  = 'rgba(0,0,0,0.9)'
+  number.shadowOffsetX = 1
+  number.shadowOffsetY = 1
+  number.shadowBlur   = 2
   number.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT
   number.verticalAlignment   = Control.VERTICAL_ALIGNMENT_TOP
   number.left = '5px'
-  number.top  = '3px'
+  number.top  = '4px'
   card.addControl(number)
 
   const qty = new TextBlock(`slot-qty-${index}`, '')
-  qty.fontSize   = 11
-  qty.fontFamily = FONT_FAMILY
-  qty.fontWeight = '600'
-  qty.color      = '#FFFFFF'
+  qty.fontSize      = 14
+  qty.fontFamily    = FONT_FAMILY
+  qty.fontWeight    = '700'
+  qty.color         = '#FFFFFF'
+  qty.shadowColor   = 'rgba(0,0,0,0.95)'
+  qty.shadowOffsetX = 1
+  qty.shadowOffsetY = 1
+  qty.shadowBlur    = 3
   qty.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT
   qty.verticalAlignment   = Control.VERTICAL_ALIGNMENT_BOTTOM
-  qty.paddingRight  = '5px'
-  qty.paddingBottom = '3px'
+  qty.paddingRight        = '5px'
+  qty.paddingBottom       = '24px'
+  qty.zIndex              = 7
   card.addControl(qty)
+
+  // Bandeau sombre derrière le nom pour lisibilité
+  const nameBg = new Rectangle(`slot-namebg-${index}`)
+  nameBg.width               = '100%'
+  nameBg.height              = '22px'
+  nameBg.thickness           = 0
+  nameBg.background          = 'rgba(0,0,0,0.65)'
+  nameBg.cornerRadius        = 3
+  nameBg.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER
+  nameBg.verticalAlignment   = Control.VERTICAL_ALIGNMENT_BOTTOM
+  nameBg.zIndex              = 5
+  card.addControl(nameBg)
 
   // Nom de l'item (affiché en bas du slot)
   const nameLabel = new TextBlock(`slot-name-${index}`, '')
-  nameLabel.height     = '14px'
-  nameLabel.fontSize   = 10
-  nameLabel.fontFamily = FONT_FAMILY
-  nameLabel.fontWeight = '600'
-  nameLabel.color      = 'rgba(255, 255, 255, 0.95)'
+  nameLabel.height        = '22px'
+  nameLabel.fontSize      = 12
+  nameLabel.fontFamily    = FONT_FAMILY
+  nameLabel.fontWeight    = '700'
+  nameLabel.color         = '#FFFFFF'
+  nameLabel.shadowColor   = 'rgba(0,0,0,0.9)'
+  nameLabel.shadowOffsetX = 1
+  nameLabel.shadowOffsetY = 1
+  nameLabel.shadowBlur    = 2
   nameLabel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER
   nameLabel.verticalAlignment   = Control.VERTICAL_ALIGNMENT_BOTTOM
-  nameLabel.paddingBottom = '9px'
+  nameLabel.zIndex        = 6
   card.addControl(nameLabel)
 
   // Fine ligne d'accent en bas → matérialise la rareté discrètement
@@ -191,8 +219,9 @@ export function setupInventoryBar(scene, opts = {}) {
   }
 
   function setItem(index, item) {
+    console.log('[inventory] setItem', index, item)
     const slot = slots[index]
-    if (!slot) return
+    if (!slot) { console.warn('[inventory] slot introuvable pour index', index); return }
     if (!item) {
       slot.icon.source     = ''
       slot.icon.alpha      = 0
@@ -245,8 +274,13 @@ export function setupInventoryBar(scene, opts = {}) {
   slots.forEach(applyVisuals)
   setSelected(0)
 
+  function clear() {
+    for (let i = 0; i < SLOT_COUNT; i++) setItem(i, null)
+  }
+
   return {
     setItem,
+    clear,
     setSelected,
     addResource,
     setResource,

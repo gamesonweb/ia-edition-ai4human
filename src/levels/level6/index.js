@@ -369,7 +369,7 @@ async function spawnComputer(scene, gui, { getHero, notifications, onSuccess } =
 }
 
 // ─── Chargement principal ─────────────────────────────────────────────────────
-export async function loadLevel6(scene, { getHero, notifications, damage, onComplete } = {}) {
+export async function loadLevel6(scene, { getHero, notifications, damage, inventory, onComplete } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel = 6
   scene.metadata.level6Phase  = 'combat'
@@ -450,6 +450,7 @@ export async function loadLevel6(scene, { getHero, notifications, damage, onComp
         })
         const kh = await spawnKey(scene, gui, zone, zi, getHero, () => {
           keysCollected++
+          inventory?.setItem(0, { name: 'Clés', icon: '/img/inventaire/Key.png', quantity: keysCollected, rarity: 'epic' })
           notifications?.show({
             icon:    'fa-key',
             variant: 'success',

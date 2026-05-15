@@ -2,15 +2,18 @@
   position: fixed;
   inset: 0;
   z-index: 5000;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 5, 14, 0.82);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  gap: 4px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s ease;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 #level-complete-overlay.open    { opacity: 1; }
 #level-complete-overlay.closing { opacity: 0; transition: opacity 0.6s ease; }
@@ -31,49 +34,47 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 4px;
   text-align: center;
   padding: 0 24px;
 }
 
+.lc-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
 
 .lc-title {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(32px, 5vw, 64px);
+  font-size: 36px;
   font-weight: 800;
-  letter-spacing: 6px;
+  font-style: italic;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #f3f6ff;
-  text-shadow:
-    0 0 30px rgba(103, 232, 249, 0.5),
-    0 0 8px  rgba(167, 139, 250, 0.4);
-  animation: lc-slide-up 0.5s cubic-bezier(.2,.7,.2,1) 0.1s both;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  margin: 0;
+  line-height: 1.1;
 }
 
 .lc-subtitle {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(13px, 1.6vw, 18px);
-  color: rgba(255, 255, 255, 0.65);
-  letter-spacing: 1.5px;
-  max-width: 480px;
-  animation: lc-slide-up 0.5s cubic-bezier(.2,.7,.2,1) 0.2s both;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.04em;
 }
 
 .lc-next {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   font-size: 11px;
-  letter-spacing: 3px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: rgba(124, 156, 255, 0.55);
-  margin-top: 10px;
-  animation: lc-slide-up 0.5s cubic-bezier(.2,.7,.2,1) 0.35s both;
-}
-
-@keyframes lc-pop {
-  0%   { transform: scale(0.4); opacity: 0; }
-  100% { transform: scale(1);   opacity: 1; }
-}
-@keyframes lc-slide-up {
-  0%   { transform: translateY(20px); opacity: 0; }
-  100% { transform: translateY(0);    opacity: 1; }
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  margin-top: 16px;
 }

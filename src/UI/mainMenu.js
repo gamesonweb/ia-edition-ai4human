@@ -32,6 +32,17 @@ const CHARACTERS = [
   },
 ]
 
+const GAME_TIPS = [
+  'Appuyez sur M pour ouvrir la carte de navigation complète.',
+  'Hackez les terminaux IA pour neutraliser les ennemis à distance.',
+  'Votre bouclier se régénère automatiquement hors de tout combat.',
+  'Restez dans les zones sombres pour réduire votre visibilité ennemie.',
+  'Les drones IA ont un angle mort dans leur dos — exploitez-le.',
+  'Combinez hacking et discrétion pour traverser les zones hostiles sans alerte.',
+  'Les données collectées augmentent votre score de mission finale.',
+  'Gardez un œil sur votre jauge de détection : fuir vaut mieux que combattre.',
+]
+
 export function showMainMenu({ onPlay } = {}) {
   document.getElementById('main-menu')?.remove()
 
@@ -227,14 +238,47 @@ export function showMainMenu({ onPlay } = {}) {
     </div>
 
     <div class="mm-loader" aria-hidden="true">
-      <div class="mm-loader-core">
-        <div class="mm-loader-ring outer"></div>
-        <div class="mm-loader-ring inner"></div>
-        <div class="mm-loader-dot"></div>
+      <div class="mm-loader-layout">
+
+        <div class="mm-loader-left">
+          <div class="mm-loader-brand">
+            <div class="mm-pretitle">
+              <span class="mm-dot"></span>
+              <span>GameOnWeb 2026 · Chargement</span>
+            </div>
+            <div class="mm-loader-title">BLACK<span class="mm-title-accent">O</span>UT</div>
+            <div class="mm-tag">Artificial Intelligence Edition</div>
+          </div>
+
+          <div class="mm-loader-center">
+            <div class="mm-loader-core">
+              <div class="mm-loader-ring outer"></div>
+              <div class="mm-loader-ring inner"></div>
+              <div class="mm-loader-dot"></div>
+            </div>
+            <div class="mm-loader-status" data-loader-status>Connexion à la grille</div>
+            <div class="mm-loader-sub" data-loader-sub>Authentification du nœud neural…</div>
+            <div class="mm-loader-progress">
+              <div class="mm-loader-bar" data-loader-bar></div>
+            </div>
+          </div>
+
+          <div class="mm-loader-tip">
+            <div class="mm-loader-tip-head">
+              <i class="fa-solid fa-microchip"></i>
+              <span>ASTUCE</span>
+            </div>
+            <p class="mm-loader-tip-body" data-loader-tip>…</p>
+          </div>
+        </div>
+
+        <div class="mm-loader-right">
+          <div class="mm-poster"></div>
+          <div class="mm-poster-edge"></div>
+          <div class="mm-poster-line"></div>
+        </div>
+
       </div>
-      <div class="mm-loader-status" data-loader-status>Connexion à la grille</div>
-      <div class="mm-loader-sub" data-loader-sub>Synchronisation en cours…</div>
-      <div class="mm-loader-progress"><div class="mm-loader-bar"></div></div>
     </div>
   `
 
@@ -357,9 +401,26 @@ export function showMainMenu({ onPlay } = {}) {
     { status: 'Liaison de l\'avatar',        sub: 'Synchronisation synaptique…' },
     { status: 'Démarrage de la simulation',  sub: 'Préparation du protocole…' },
   ]
-  let loaderTimer = 0
+  let loaderTimer     = 0
+  let loaderStartTime = 0
+
   const showLoader = () => {
+    loaderStartTime = Date.now()
     container.classList.add('is-loading')
+
+    const tipEl = container.querySelector('[data-loader-tip]')
+    if (tipEl) tipEl.textContent = GAME_TIPS[Math.floor(Math.random() * GAME_TIPS.length)]
+
+    const barEl = container.querySelector('[data-loader-bar]')
+    if (barEl) {
+      barEl.style.transition = 'none'
+      barEl.style.width = '0%'
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        barEl.style.transition = 'width 5.5s cubic-bezier(0.05, 0.85, 0.3, 1)'
+        barEl.style.width = '82%'
+      }))
+    }
+
     let i = 0
     const apply = () => {
       const s = LOADER_STEPS[i % LOADER_STEPS.length]
@@ -370,9 +431,28 @@ export function showMainMenu({ onPlay } = {}) {
     apply()
     loaderTimer = window.setInterval(apply, 1700)
   }
-  const hideLoader = () => {
-    container.classList.remove('is-loading')
+
+  const hideLoader = (immediate = false) => {
     if (loaderTimer) { clearInterval(loaderTimer); loaderTimer = 0 }
+    if (immediate) {
+      container.classList.remove('is-loading')
+      return Promise.resolve()
+    }
+    const elapsed  = Date.now() - loaderStartTime
+    const waitLeft = Math.max(0, 5000 - elapsed)
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const barEl = container.querySelector('[data-loader-bar]')
+        if (barEl) {
+          barEl.style.transition = 'width 0.35s ease'
+          barEl.style.width = '100%'
+        }
+        setTimeout(() => {
+          container.classList.remove('is-loading')
+          resolve()
+        }, 420)
+      }, waitLeft)
+    })
   }
 
   let starting = false
@@ -393,11 +473,12 @@ export function showMainMenu({ onPlay } = {}) {
 
     showLoader()
 
+    let postLoad = null
     try {
-      await onPlay?.({ name: playerName, character: selectedCharacter })
+      postLoad = await onPlay?.({ name: playerName, character: selectedCharacter })
     } catch (err) {
       console.error('[mainMenu] échec du lancement', err)
-      hideLoader()
+      hideLoader(true)
       launchBtn.disabled = false
       container.querySelector('[data-action="char-back"]').disabled = false
       starting = false
@@ -409,8 +490,9 @@ export function showMainMenu({ onPlay } = {}) {
       }
       return
     }
-    hideLoader()
+    await hideLoader()
     finish()
+    postLoad?.()
   })
 
   return { element: container, close: finish }

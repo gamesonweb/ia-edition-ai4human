@@ -1,4 +1,6 @@
-/* ===== Mini-map (radar) ===== */
+/* ═══════════════════════════════════════════════
+   Mini-map radar (coin haut-droit)
+═══════════════════════════════════════════════ */
 #mini-map {
   position: fixed;
   top: 16px;
@@ -34,7 +36,6 @@
   pointer-events: none;
   transform-origin: 50% 50%;
 }
-
 #mini-map .player::before {
   content: '';
   position: absolute;
@@ -43,7 +44,6 @@
   border-radius: 50%;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.85);
 }
-
 #mini-map .player::after {
   content: '';
   position: absolute;
@@ -71,67 +71,170 @@
   pointer-events: none;
 }
 
-/* ===== Expanded map ===== */
-#map-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-#map-overlay.open { opacity: 1; pointer-events: auto; }
 
+/* ═══════════════════════════════════════════════
+   Carte plein écran
+═══════════════════════════════════════════════ */
 #map-expanded {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 80vmin;
-  height: 80vmin;
-  max-width: 720px;
-  max-height: 720px;
-  transform: translate(-50%, -50%) scale(0.96);
-  background: rgba(10, 12, 16, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  overflow: hidden;
+  inset: 0;
   z-index: 1001;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  transform: scale(0.98);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(.2, .7, .2, 1);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: #fff;
+  background: radial-gradient(ellipse at 25% 60%, #0e1428 0%, #07091a 55%, #04050d 100%);
+  overflow: hidden;
 }
 #map-expanded.open {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
+  transform: scale(1);
 }
 
-#map-expanded .full-img {
+/* ── Aurore fond ── */
+.map-aurora {
   position: absolute;
   inset: 0;
-  background: url('/img/map/map.png') center/contain no-repeat;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 20% 35%, rgba(124, 156, 255, 0.18), transparent 70%),
+    radial-gradient(50% 60% at 70% 70%, rgba(167, 139, 250, 0.14), transparent 70%),
+    radial-gradient(40% 30% at 50% 5%,  rgba(103, 232, 249, 0.10), transparent 70%);
+  filter: blur(22px);
+  animation: map-aurora 18s ease-in-out infinite alternate;
+}
+@keyframes map-aurora {
+  0%   { transform: translate3d(0,   0, 0) scale(1);    }
+  100% { transform: translate3d(2%, -1%, 0) scale(1.05); }
 }
 
-#map-expanded .player-mark {
+.map-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ── Layout 2 colonnes ── */
+.map-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 34%);
+  grid-template-rows: 100%;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+
+/* ═══════════════════════════════════════════════
+   Gauche : grande carte
+═══════════════════════════════════════════════ */
+.map-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 5vh 3vw 5vh 6vw;
+  gap: 14px;
+}
+
+.map-header { flex: 0 0 auto; flex-shrink: 0; }
+
+.map-pretitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #7C9CFF;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.map-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #A78BFA, #7C9CFF);
+  box-shadow:
+    0 0 8px  rgba(124, 156, 255, 0.85),
+    0 0 18px rgba(167, 139, 250, 0.55);
+  animation: map-pulse 2s ease-in-out infinite;
+}
+@keyframes map-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+.map-title-text {
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: #f3f6ff;
+  text-shadow:
+    0 0 18px rgba(124, 156, 255, 0.3),
+    0 0 2px  rgba(167, 139, 250, 0.4);
+}
+
+/* Conteneur de la carte */
+.map-container {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(124, 156, 255, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.10),
+    0 16px 48px rgba(0, 0, 0, 0.65),
+    inset 0 0 40px rgba(124, 156, 255, 0.04);
+  background: rgba(8, 10, 18, 0.85);
+
+  /* Animation d'entrée */
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.4s ease 0.05s,
+    transform 0.45s cubic-bezier(.2, .7, .2, 1) 0.05s;
+}
+#map-expanded.open .map-container {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.map-container .full-img {
+  position: absolute;
+  inset: 0;
+  background: url('/img/map/map.png') center / contain no-repeat;
+}
+
+/* Marqueur joueur */
+.map-container .player-mark {
   position: absolute;
   width: 18px;
   height: 18px;
   margin: -9px 0 0 -9px;
   pointer-events: none;
 }
-
-#map-expanded .player-mark::before {
+.map-container .player-mark::before {
   content: '';
   position: absolute;
   inset: 5px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
 }
-
-#map-expanded .player-mark::after {
+.map-container .player-mark::after {
   content: '';
   position: absolute;
   top: -8px;
@@ -145,42 +248,396 @@
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
 }
 
-#map-expanded .title {
+/* Points cardinaux */
+.map-compass {
   position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 12px;
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(124, 156, 255, 0.65);
   pointer-events: none;
+  text-shadow: 0 0 8px rgba(124, 156, 255, 0.6);
+}
+.map-compass-n { top: 8px;    left: 50%; transform: translateX(-50%); }
+.map-compass-s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+.map-compass-e { right: 10px; top: 50%;  transform: translateY(-50%); }
+.map-compass-w { left: 10px;  top: 50%;  transform: translateY(-50%); }
+
+/* Ligne de scan animée */
+.map-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.6), transparent);
+  pointer-events: none;
+  animation: map-scan 4s linear infinite;
+}
+@keyframes map-scan {
+  0%   { top: 0%;   opacity: 0.8; }
+  90%  { opacity: 0.4; }
+  100% { top: 100%; opacity: 0; }
 }
 
-#map-expanded .close {
+/* Coordonnées */
+.map-coords {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  color: rgba(124, 156, 255, 0.5);
+  text-transform: uppercase;
+  font-family: 'Courier New', 'Courier', monospace;
+
+  opacity: 0;
+  transition: opacity 0.3s ease 0.3s;
+}
+#map-expanded.open .map-coords {
+  opacity: 1;
+}
+
+
+/* ═══════════════════════════════════════════════
+   Droite : légende
+═══════════════════════════════════════════════ */
+.map-legend {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 5vh 4vw 5vh 3vw;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-left: 1px solid rgba(124, 156, 255, 0.12);
+  background: linear-gradient(180deg, rgba(14, 18, 36, 0.45), rgba(7, 9, 26, 0.65));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.map-legend::-webkit-scrollbar { width: 4px; }
+.map-legend::-webkit-scrollbar-track { background: transparent; }
+.map-legend::-webkit-scrollbar-thumb { background: rgba(124, 156, 255, 0.2); border-radius: 2px; }
+
+/* En-tête légende */
+.map-legend-head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.map-legend-title {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+  color: #f3f6ff;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+/* Bouton fermer — même style que mm-btn */
+.map-close-btn {
+  appearance: none;
+  border: 1px solid rgba(124, 156, 255, 0.22);
+  background: rgba(14, 18, 36, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(243, 246, 255, 0.92);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 11px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.map-close-btn::before {
+  content: '';
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  padding: 0;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(124, 156, 255, 0.18), transparent);
+  transition: left 0.5s ease;
+}
+.map-close-btn:hover::before { left: 100%; }
+.map-close-btn i { font-size: 12px; color: #7C9CFF; }
+.map-close-btn:hover {
+  background: rgba(28, 32, 60, 0.78);
+  border-color: rgba(124, 156, 255, 0.55);
+  transform: translateX(-4px);
+  box-shadow: 0 6px 18px rgba(124, 156, 255, 0.16);
+}
+.map-close-btn:active { transform: translateX(-2px) scale(0.99); }
+
+/* Section */
+.map-legend-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.map-legend-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: #7C9CFF;
+  margin-bottom: 2px;
+}
+
+/* Carte légende — inspirée mm-card */
+.map-legend-card {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(18, 22, 44, 0.85), rgba(10, 14, 28, 0.85));
+  border: 1px solid rgba(124, 156, 255, 0.18);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow: hidden;
+  /* Animation d'entrée depuis la droite */
+  opacity: 0;
+  transform: translateX(14px);
+  transition:
+    opacity 0.32s ease,
+    transform 0.38s cubic-bezier(.2, .7, .2, 1),
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  transition-delay: calc(var(--i, 0) * 0.045s + 0.12s);
+}
+.map-legend-card::before {
+  content: '';
+  position: absolute;
+  top: -40%; right: -10%;
+  width: 70%; height: 200%;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.12), transparent 70%);
+  pointer-events: none;
+}
+#map-expanded.open .map-legend-card {
+  opacity: 1;
+  transform: translateX(0);
+}
+.map-legend-card:hover {
+  border-color: rgba(124, 156, 255, 0.45);
+  box-shadow: 0 8px 24px rgba(124, 156, 255, 0.14);
+}
+
+/* Icône dans la carte */
+.map-legend-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  color: #fff;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  background: rgba(124, 156, 255, 0.08);
+  border: 1px solid rgba(124, 156, 255, 0.16);
+  border-radius: 8px;
+  font-size: 14px;
 }
-#map-expanded .close:hover {
-  background: rgba(220, 60, 60, 0.55);
-  transform: scale(1.08);
+
+/* Icône joueur (mini version du marqueur) */
+.legend-player-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+.legend-player-icon::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.85);
+}
+.legend-player-icon::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  margin-left: -4px;
+  width: 0; height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 7px solid #fff;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+/* Pastille zone */
+.legend-zone-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+/* Texte légende */
+.map-legend-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.map-legend-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f6ff;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-legend-desc {
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.48);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Séparateur */
+.map-legend-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(124, 156, 255, 0.2), transparent);
+  margin: 2px 0;
+  flex: 0 0 auto;
+}
+
+/* Pied de légende */
+.map-legend-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding-top: 10px;
+}
+
+.map-key-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.4px;
+  flex-wrap: wrap;
+}
+.map-key-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  background: rgba(124, 156, 255, 0.10);
+  border: 1px solid rgba(124, 156, 255, 0.30);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: #7C9CFF;
+  letter-spacing: 0.5px;
+}
+
+.map-legend-foot-text {
+  font-size: 10px;
+  color: rgba(124, 156, 255, 0.38);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+
+/* ═══════════════════════════════════════════════
+   Ligne de séparation (inspirée mm-poster-line)
+═══════════════════════════════════════════════ */
+.map-layout::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: calc(100% - 36%);     /* bord gauche de la légende */
+  width: 2px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(124, 156, 255, 0.0)  5%,
+    rgba(124, 156, 255, 0.65) 30%,
+    rgba(167, 139, 250, 0.65) 70%,
+    rgba(167, 139, 250, 0.0)  95%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 10px rgba(124, 156, 255, 0.45),
+    0 0 22px rgba(167, 139, 250, 0.25);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.1s;
+}
+#map-expanded.open .map-layout::after {
+  opacity: 1;
+}
+
+
+/* ═══════════════════════════════════════════════
+   Responsive
+═══════════════════════════════════════════════ */
+
+/* Tablette portrait / petit écran */
+@media (max-width: 860px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 55% 45%;
+  }
+  .map-layout::after { display: none; }
+  .map-main {
+    padding: 3vh 5vw 1vh;
+    gap: 10px;
+  }
+  .map-legend {
+    border-left: none;
+    border-top: 1px solid rgba(124, 156, 255, 0.12);
+    padding: 2vh 5vw 3vh;
+    gap: 12px;
+  }
+}
+
+/* Téléphone */
+@media (max-width: 540px) {
+  .map-layout {
+    grid-template-rows: 50% 50%;
+  }
+  .map-main { padding: 2vh 4vw 1vh; }
+  .map-legend { padding: 1.5vh 4vw 2vh; gap: 8px; }
+  .map-pretitle { display: none; }
+  .map-title-text { font-size: 18px; letter-spacing: 5px; }
+  .map-legend-title { font-size: 18px; }
+  .map-legend-card { padding: 8px 12px; }
+  .map-legend-desc { display: none; }
+  .map-coords { font-size: 10px; }
+}
+
+/* Très petit ou paysage mobile : empiler avec scroll */
+@media (max-height: 500px) {
+  .map-layout {
+    grid-template-columns: 1fr minmax(240px, 32%);
+    grid-template-rows: 100%;
+  }
+  .map-layout::after { display: block; }
+  .map-main  { padding: 2vh 2vw 2vh 4vw; }
+  .map-legend {
+    border-left: 1px solid rgba(124, 156, 255, 0.12);
+    border-top: none;
+    padding: 2vh 3vw 2vh 2vw;
+  }
+  .map-pretitle { display: none; }
+  .map-legend-desc { display: none; }
 }

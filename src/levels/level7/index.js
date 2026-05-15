@@ -168,7 +168,7 @@ function createTalkPrompt(scene, gui) {
 }
 
 // ─── Chargement principal ─────────────────────────────────────────────────────
-export async function loadLevel7(scene, { getHero, notifications, onComplete } = {}) {
+export async function loadLevel7(scene, { getHero, notifications, inventory, onComplete } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel  = 7
   scene.metadata.level7Phase   = 'find-jacob'
@@ -194,6 +194,7 @@ export async function loadLevel7(scene, { getHero, notifications, onComplete } =
     if (completed) return
     completed = true
     scene.metadata.level7Phase = 'completed'
+    inventory?.setItem(0, { name: 'Hologramme', icon: '/img/inventaire/holographic.png', rarity: 'legendary' })
     notifications?.dismiss('objective')
     showLevelComplete({
       title:    'Manche 7 terminée',

@@ -683,32 +683,92 @@
   text-transform: uppercase;
 }
 
-/* ---------- Loader plein écran ---------- */
 .mm-loader {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  background: rgba(6, 8, 18, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  z-index: 1200;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.4s ease;
+  overflow: hidden;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #fff;
 }
 #main-menu.is-loading .mm-loader {
   opacity: 1;
   pointer-events: auto;
 }
 
+/* Layout 2 colonnes — remplit exactement le viewport */
+.mm-loader-layout {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 55% 45%;
+  grid-template-rows: 100%;
+  background: radial-gradient(ellipse at 25% 60%, #0e1428 0%, #07091a 55%, #04050d 100%);
+  overflow: hidden;
+}
+
+/* ── Colonne gauche ── */
+.mm-loader-left {
+  position: relative;
+  /* pas de height: 100% — le grid stretch s'en charge */
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* padding adaptatif : ne jamais dépasser 10% de la hauteur disponible */
+  padding: clamp(20px, 5vh, 60px) clamp(24px, 5vw, 72px);
+  gap: clamp(16px, 2.5vh, 36px);
+}
+.mm-loader-left::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgba(7, 9, 26, 0.5) 0%,
+    rgba(7, 9, 26, 0.15) 70%,
+    transparent 100%
+  );
+}
+
+/* ── Brand ── */
+.mm-loader-brand {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.mm-loader-title {
+  margin: 8px 0 8px;
+  font-size: clamp(28px, 3.8vw, 58px);
+  font-weight: 700;
+  letter-spacing: 6px;
+  line-height: 1;
+  color: #f3f6ff;
+  text-shadow:
+    0 0 18px rgba(124, 156, 255, 0.25),
+    0 0 2px  rgba(167, 139, 250, 0.4);
+}
+
+/* ── Zone spinner + statut ── */
+.mm-loader-center {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vh, 18px);
+}
+
 .mm-loader-core {
   position: relative;
-  width: 92px;
-  height: 92px;
+  width: clamp(64px, 8vmin, 92px);
+  height: clamp(64px, 8vmin, 92px);
   display: grid;
   place-items: center;
 }
@@ -747,24 +807,22 @@
 }
 
 .mm-loader-status {
-  margin-top: 8px;
-  font-size: 16px;
+  font-size: clamp(11px, 1.1vw, 15px);
   font-weight: 600;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: #f3f6ff;
   text-shadow: 0 0 12px rgba(124, 156, 255, 0.45);
-  transition: opacity 0.35s ease;
 }
 .mm-loader-sub {
-  font-size: 12px;
+  font-size: clamp(10px, 0.9vw, 12px);
   letter-spacing: 1.5px;
   color: rgba(124, 156, 255, 0.7);
-  transition: opacity 0.35s ease;
 }
 
+/* Barre de progression — pilotée par JS */
 .mm-loader-progress {
-  width: min(320px, 50vw);
+  width: min(360px, 80%);
   height: 3px;
   border-radius: 2px;
   background: rgba(124, 156, 255, 0.12);
@@ -773,19 +831,105 @@
 }
 .mm-loader-bar {
   position: absolute;
-  inset: 0;
-  width: 35%;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    #67E8F9 30%,
-    #A78BFA 70%,
-    transparent 100%);
-  filter: drop-shadow(0 0 4px rgba(124, 156, 255, 0.6));
-  animation: mm-loader-bar 1.6s ease-in-out infinite;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #67E8F9 0%, #7C9CFF 50%, #A78BFA 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(124, 156, 255, 0.55);
 }
-@keyframes mm-loader-bar {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(285%);  }
+
+/* ── Carte astuce ── */
+.mm-loader-tip {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgba(18, 22, 44, 0.9), rgba(10, 14, 28, 0.9));
+  border: 1px solid rgba(124, 156, 255, 0.22);
+  border-radius: 12px;
+  max-width: 460px;
+  overflow: hidden;
+}
+.mm-loader-tip::before {
+  content: '';
+  position: absolute;
+  top: -40%; right: -10%;
+  width: 70%; height: 200%;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.mm-loader-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mm-loader-tip-head i    { font-size: 11px; color: #67E8F9; }
+.mm-loader-tip-head span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: #67E8F9;
+}
+.mm-loader-tip-body {
+  margin: 0;
+  font-size: clamp(11px, 1vw, 13px);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.3px;
+}
+
+/* ── Colonne droite : poster ── */
+.mm-loader-right {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Responsive ── */
+
+/* Tablette portrait */
+@media (max-width: 860px) {
+  .mm-loader-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  .mm-loader-right  { display: none; }
+  .mm-loader-left   {
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(16px, 4vh, 48px) clamp(20px, 7vw, 64px);
+    gap: clamp(20px, 3vh, 40px);
+  }
+  .mm-loader-title  { font-size: clamp(28px, 5vw, 48px); }
+  .mm-loader-tip    { max-width: 100%; }
+}
+
+/* Mobile */
+@media (max-width: 540px) {
+  .mm-loader-left {
+    padding: 20px 24px;
+    gap: 18px;
+  }
+  .mm-loader-title { font-size: 28px; letter-spacing: 4px; }
+}
+
+/* Écran court (paysage mobile / petite hauteur) */
+@media (max-height: 560px) {
+  .mm-loader-left {
+    justify-content: flex-start;
+    padding: 12px clamp(24px, 5vw, 72px);
+    gap: 12px;
+  }
+  .mm-loader-title  { font-size: clamp(20px, 3vw, 32px); margin: 4px 0; }
+  .mm-loader-core   { width: 56px; height: 56px; }
+  .mm-loader-ring.inner { inset: 10px; }
+  .mm-loader-tip    { padding: 10px 14px; }
+  .mm-loader-tip-body { font-size: 11px; }
 }
 
 /* ---------- Spinner de chargement ---------- */

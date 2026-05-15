@@ -79,7 +79,7 @@ function startConfetti(canvas) {
  * Affiche l'overlay "manche terminée" avec confetti.
  * @param {{ title?: string, subtitle?: string, duration?: number }} opts
  */
-export function showLevelComplete({ title = 'Manche terminée', subtitle = '', duration = 3500 } = {}) {
+export function showLevelComplete({ label = 'Manche', title = 'Manche terminée', subtitle = '', duration = 3500 } = {}) {
   document.getElementById('level-complete-overlay')?.remove()
 
   const overlay = document.createElement('div')
@@ -88,6 +88,7 @@ export function showLevelComplete({ title = 'Manche terminée', subtitle = '', d
   overlay.innerHTML = `
     <canvas class="lc-confetti"></canvas>
     <div class="lc-content">
+      ${label ? `<div class="lc-label">${label}</div>` : ''}
       <div class="lc-title">${title}</div>
       ${subtitle ? `<div class="lc-subtitle">${subtitle}</div>` : ''}
       <div class="lc-next">Chargement de la prochaine manche…</div>

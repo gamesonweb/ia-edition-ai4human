@@ -173,7 +173,7 @@ async function importDecor(scene, file, positions, namePrefix, scale = 1, rotati
   return placed
 }
 
-export async function loadLevel1(scene, { getHero, notifications, onComplete } = {}) {
+export async function loadLevel1(scene, { getHero, notifications, inventory, onComplete } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel = 1
   scene.metadata.level1Phase  = 'cards'
@@ -208,7 +208,7 @@ export async function loadLevel1(scene, { getHero, notifications, onComplete } =
   // dès que `currentLevel` change (cohérent avec le pattern de police.js)
   const collectiblesHandles = []
   let level1Active = null
-  scene.onBeforeRenderObservable.add(() => {
+  const visObserver = scene.onBeforeRenderObservable.add(() => {
     const isLevel1 = scene.metadata?.currentLevel === 1
     if (isLevel1 === level1Active) return
     level1Active = isLevel1
@@ -250,6 +250,8 @@ export async function loadLevel1(scene, { getHero, notifications, onComplete } =
         height:   4,
       },
       onPickup: (idx, count, total) => {
+        console.log('[level1] onPickup cartes', { count, total, inventoryDefined: !!inventory })
+        inventory?.setItem(0, { name: 'Cartes', icon: '/img/inventaire/cards.png', quantity: count, rarity: 'uncommon' })
         notifications.show({
           id:      'card-progress',
           icon:    'fa-id-card',
@@ -301,6 +303,7 @@ export async function loadLevel1(scene, { getHero, notifications, onComplete } =
             height:   4,
           },
           onPickup: (idx, count, total) => {
+            inventory?.setItem(1, { name: 'Tampons', icon: '/img/inventaire/cards.png', quantity: count, rarity: 'rare' })
             notifications.show({
               id:      'stamp-progress',
               icon:    'fa-stamp',
@@ -350,5 +353,19 @@ export async function loadLevel1(scene, { getHero, notifications, onComplete } =
     onComplete?.()
   }
 
-  return { barriers, soldiers, skip }
+  return {
+    barriers,
+    soldiers,
+    skip,
+    dispose: () => {
+      scene.onBeforeRenderObservable.remove(visObserver)
+      for (const h of collectiblesHandles) try { h.dispose?.() } catch {}
+      notifications?.dismiss('objective')
+      notifications?.dismiss('police-warning')
+      notifications?.dismiss('card-progress')
+      notifications?.dismiss('stamp-progress')
+      for (const m of barriers) try { m.dispose() } catch {}
+      for (const m of soldiers) try { m.dispose() } catch {}
+    },
+  }
 }

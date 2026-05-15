@@ -33,7 +33,7 @@ export function createSky(scene) {
   dome.material = mat
 
   scene.fogMode  = Scene.FOGMODE_LINEAR
-  scene.fogStart = 30
-  scene.fogEnd   = 300
+  scene.fogStart = 15
+  scene.fogEnd   = 120
   scene.fogColor = new Color3(1, 0.55, 0.1)
 }
