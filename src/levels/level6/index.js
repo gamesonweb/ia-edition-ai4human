@@ -48,6 +48,8 @@ const ZONES = [
   {
     label:  'Zone 1',
     center: { x: 15.27,    y: 0.14, z: 185.44 },
+    // Centroïde des spawns ≈ (28.75, 185.75), rayon englobant tous les spawns + marge
+    wander: { cx: 28.75, cz: 185.75, radius: 75 },
     spawns: [
       { file: 'ennemiIA_1.glb', position: { x: -35,  y: 0.14, z: 183 } },
       { file: 'ennemiIA_3.glb', position: { x:  10,  y: 0.14, z: 189 } },
@@ -58,6 +60,8 @@ const ZONES = [
   {
     label:  'Zone 2',
     center: { x: 164.67,   y: 0.14, z: 34.77 },
+    // Centroïde des spawns ≈ (165, 38), rayon englobant
+    wander: { cx: 165, cz: 38, radius: 55 },
     spawns: [
       { file: 'ennemiIA_3.glb', position: { x: 162, y: 0.14, z: -10 } },
       { file: 'ennemiIA_1.glb', position: { x: 168, y: 0.14, z:  25 } },
@@ -68,6 +72,8 @@ const ZONES = [
   {
     label:  'Zone 3',
     center: { x: -191.64,  y: 0.14, z: 132.37 },
+    // Centroïde des spawns ≈ (-190, 55), rayon englobant
+    wander: { cx: -190, cz: 55, radius: 55 },
     spawns: [
       { file: 'ennemiIA_1.glb', position: { x: -192, y: 0.14, z:   10 } },
       { file: 'ennemiIA_3.glb', position: { x: -188, y: 0.14, z:  100 } },
@@ -371,9 +377,12 @@ async function spawnComputer(scene, gui, { getHero, notifications, onSuccess } =
 // ─── Chargement principal ─────────────────────────────────────────────────────
 export async function loadLevel6(scene, { getHero, notifications, damage, inventory, onComplete } = {}) {
   if (!scene.metadata) scene.metadata = {}
-  scene.metadata.currentLevel = 6
-  scene.metadata.level6Phase  = 'combat'
-  scene.metadata.ennemiHandles = []
+  scene.metadata.currentLevel       = 6
+  scene.metadata.level6Phase        = 'combat'
+  scene.metadata.ennemiHandles      = []
+  scene.metadata.level6ZonesCleared = []   // indices des zones dont tous les ennemis sont morts
+  scene.metadata.level6KeysCollected = 0   // nb de clés ramassées
+  scene.metadata.level6ComputerActive = false // ordinateur apparu
 
   const gui = AdvancedDynamicTexture.CreateFullscreenUI('level6-gui', true, scene)
   gui.idealWidth = 1920
@@ -419,6 +428,7 @@ export async function loadLevel6(scene, { getHero, notifications, damage, invent
       message:    'Accédez à l\'ordinateur central et déverrouillez le système.',
       persistent: true,
     })
+    scene.metadata.level6ComputerActive = true
     spawnComputer(scene, gui, { getHero, notifications, onSuccess: finalize })
   }
 
@@ -440,6 +450,10 @@ export async function loadLevel6(scene, { getHero, notifications, damage, invent
       })
 
       if (zoneDeadCount >= zone.spawns.length) {
+        // Marque la zone comme libérée pour la minimap
+        if (!scene.metadata.level6ZonesCleared.includes(zi))
+          scene.metadata.level6ZonesCleared.push(zi)
+
         // Tous les ennemis de la zone sont morts → spawn clé
         notifications?.show({
           icon:    'fa-key',
@@ -450,6 +464,7 @@ export async function loadLevel6(scene, { getHero, notifications, damage, invent
         })
         const kh = await spawnKey(scene, gui, zone, zi, getHero, () => {
           keysCollected++
+          scene.metadata.level6KeysCollected = keysCollected
           inventory?.setItem(0, { name: 'Clés', icon: '/img/inventaire/Key.png', quantity: keysCollected, rarity: 'epic' })
           notifications?.show({
             icon:    'fa-key',
@@ -471,6 +486,7 @@ export async function loadLevel6(scene, { getHero, notifications, damage, invent
         position:     cfg.position,
         getHero,
         damagePlayer: damage,
+        wanderZone:   zone.wander,
         onDeath:      onZoneEnemyDeath,
       })
       if (handle) {

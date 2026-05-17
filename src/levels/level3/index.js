@@ -1,21 +1,23 @@
 import { MeshBuilder }      from '@babylonjs/core/Meshes/meshBuilder'
-import { Mesh }             from '@babylonjs/core/Meshes/mesh'
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
-import { DynamicTexture }   from '@babylonjs/core/Materials/Textures/dynamicTexture'
-import { Color3 }           from '@babylonjs/core/Maths/math.color'
+
+import { AdvancedDynamicTexture } from '@babylonjs/gui/2D/advancedDynamicTexture'
+import { Rectangle }              from '@babylonjs/gui/2D/controls/rectangle'
+import { TextBlock }              from '@babylonjs/gui/2D/controls/textBlock'
+import { StackPanel }             from '@babylonjs/gui/2D/controls/stackPanel'
+import { Control }                from '@babylonjs/gui/2D/controls/control'
 
 import { spawnCollectibles } from '../../scene/collectibles.js'
 import { showSwapModal }     from '../../UI/swapModal.js'
 import { showAdoptModal }    from '../../UI/adoptModal.js'
 import { showLevelComplete } from '../../UI/levelComplete.js'
 
-const LEVEL3_BASE = '/level/level2/' // les GLB demandés se trouvent dans ce dossier
+const LEVEL3_BASE = '/level/level2/'
 
 const MOTHERBOARD_POS = { x:  -22.79, y: 0.14, z:  28.55 }
 const DISK_POS        = { x:  148.86, y: 0.14, z:  38.11 }
-// même point que DEPOSIT_POS du level 2 — c'est là que le robot est figé en idle
 const ROBOT_POS       = { x:   24.72, y: 0.14, z: 310.48 }
 const SWAP_RADIUS     = 5
+const BILLBOARD_RADIUS = 14
 
 const TUBE = { color: '#FF8C00', alpha: 0.32, diameter: 2.2, height: 4 }
 
@@ -30,58 +32,56 @@ export const LEVEL3_INTRO = {
   duration: 7000,
 }
 
-function makeSignText(scene, text, position) {
-  const width  = 1024
-  const height = 256
-  const tex = new DynamicTexture('level3-sign-tex', { width, height }, scene, false)
-  tex.hasAlpha = true
-  const ctx = tex.getContext()
-  ctx.clearRect(0, 0, width, height)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-  ctx.fillRect(0, 0, width, height)
-  ctx.font         = 'bold 96px "Segoe UI", system-ui, sans-serif'
-  ctx.textAlign    = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.strokeStyle  = '#000000'
-  ctx.lineWidth    = 8
-  ctx.strokeText(text, width / 2, height / 2)
-  ctx.fillStyle    = '#4ADE80'
-  ctx.fillText(text, width / 2, height / 2)
-  tex.update(false)
+function makePromptCard(gui, anchor, { key, label }) {
+  const card = new Rectangle()
+  card.width        = '340px'
+  card.height       = '72px'
+  card.cornerRadius = 12
+  card.thickness    = 2
+  card.color        = '#67E8F9'
+  card.background   = 'rgba(8, 12, 22, 0.85)'
+  card.shadowColor  = '#7C9CFF'
+  card.shadowBlur   = 18
+  card.linkOffsetY  = -120
+  card.isVisible    = false
+  gui.addControl(card)
+  card.linkWithMesh(anchor)
 
-  const mat = new StandardMaterial('level3-sign-mat', scene)
-  mat.diffuseTexture            = tex
-  mat.emissiveColor             = new Color3(1, 1, 1)
-  mat.specularColor             = new Color3(0, 0, 0)
-  mat.useAlphaFromDiffuseTexture = true
-  mat.backFaceCulling           = false
+  const stack = new StackPanel()
+  stack.isVertical = false
+  stack.spacing    = 14
+  stack.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER
+  card.addControl(stack)
 
-  const plane = MeshBuilder.CreatePlane(
-    'level3-sign',
-    { width: 6, height: 1.5, sideOrientation: Mesh.DOUBLESIDE },
-    scene,
-  )
-  plane.rotation.y      = Math.PI
-  plane.material        = mat
-  plane.position.set(position.x, position.y, position.z)
-  plane.billboardMode   = Mesh.BILLBOARDMODE_ALL
-  plane.isPickable      = false
-  plane.checkCollisions = false
+  const badge = new Rectangle()
+  badge.width        = '40px'
+  badge.height       = '40px'
+  badge.cornerRadius = 6
+  badge.thickness    = 2
+  badge.color        = '#A78BFA'
+  badge.background   = 'rgba(124, 156, 255, 0.18)'
+  stack.addControl(badge)
 
-  return { plane, material: mat, texture: tex }
+  const keyTb = new TextBlock()
+  keyTb.text       = key
+  keyTb.color      = '#f3f6ff'
+  keyTb.fontWeight = 'bold'
+  keyTb.fontSize   = 22
+  keyTb.fontFamily = '"Segoe UI", system-ui, sans-serif'
+  badge.addControl(keyTb)
+
+  const labelTb = new TextBlock()
+  labelTb.text        = label
+  labelTb.color       = '#f3f6ff'
+  labelTb.fontSize    = 16
+  labelTb.fontWeight  = '600'
+  labelTb.fontFamily  = '"Segoe UI", system-ui, sans-serif'
+  labelTb.resizeToFit = true
+  stack.addControl(labelTb)
+
+  return card
 }
 
-/**
- * Charge la manche 3 : 2 composants à récupérer puis échange auprès du robot.
- *
- * @param {import('@babylonjs/core').Scene} scene
- * @param {{
- *   getHero?: () => any,
- *   notifications?: any,
- *   inventory?: any,
- *   onComplete?: () => void,
- * }} [opts]
- */
 export async function loadLevel3(scene, { getHero, notifications, inventory, robot, onComplete } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel = 3
@@ -95,6 +95,19 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
     persistent: true,
   })
 
+  // ----- GUI billboards (style level 4) -----
+  const gui = AdvancedDynamicTexture.CreateFullscreenUI('level3-gui', true, scene)
+  gui.idealWidth = 1920
+
+  const robotAnchor = MeshBuilder.CreatePlane('l3-robot-anchor', { size: 0.01 }, scene)
+  robotAnchor.position.set(ROBOT_POS.x, ROBOT_POS.y + 4.5, ROBOT_POS.z)
+  robotAnchor.isVisible      = false
+  robotAnchor.isPickable     = false
+  robotAnchor.checkCollisions = false
+
+  const swapCard  = makePromptCard(gui, robotAnchor, { key: 'B', label: 'Installer les composants' })
+  const adoptCard = makePromptCard(gui, robotAnchor, { key: 'B', label: 'Devenir ami' })
+
   let mbDone      = false
   let diskDone    = false
   let swapActive  = false
@@ -102,8 +115,6 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
   let adoptActive = false
   let adoptDone   = false
   let completed   = false
-  let swapSign    = null
-  let adoptSign   = null
   let inRange     = false
   let modalOpen   = false
 
@@ -122,12 +133,6 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
       message:    'Retournez au robot pour installer la carte mère et le disque.',
       persistent: true,
     })
-
-    // Panneau 3D créé tout de suite, masqué — on l'allume quand le joueur est à portée
-    swapSign = makeSignText(scene, 'Appuyer sur B', {
-      x: ROBOT_POS.x, y: ROBOT_POS.y + 3, z: ROBOT_POS.z,
-    })
-    swapSign.plane.setEnabled(false)
   }
 
   const mbHandle = await spawnCollectibles(scene, {
@@ -188,15 +193,13 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
         }
       }
     }
-    if (swapSign)  swapSign.plane.setEnabled(isLevel3 && inRange)
-    if (adoptSign) adoptSign.plane.setEnabled(isLevel3 && inRange)
+    if (!isLevel3) {
+      swapCard.isVisible  = false
+      adoptCard.isVisible = false
+    }
   })
 
-  const activeSign = () =>
-    (swapActive  && !swapDone)  ? swapSign  :
-    (adoptActive && !adoptDone) ? adoptSign : null
-
-  // Détection de proximité au robot — affiche / masque le panneau 3D actif
+  // Proximité robot — affiche le bon billboard
   const proxObserver = scene.onBeforeRenderObservable.add(() => {
     if (completed) return
     if (!(swapActive || adoptActive)) return
@@ -208,24 +211,19 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
 
     const dx = hero.position.x - ROBOT_POS.x
     const dz = hero.position.z - ROBOT_POS.z
-    const wasInRange = inRange
-    inRange = dx*dx + dz*dz <= SWAP_RADIUS * SWAP_RADIUS
+    const distSq = dx*dx + dz*dz
+    inRange = distSq <= SWAP_RADIUS * SWAP_RADIUS
 
-    const sign = activeSign()
-    if (sign && inRange !== wasInRange) sign.plane.setEnabled(inRange)
+    const nearEnough = distSq <= BILLBOARD_RADIUS * BILLBOARD_RADIUS
+    swapCard.isVisible  = nearEnough && swapActive  && !swapDone
+    adoptCard.isVisible = nearEnough && adoptActive && !adoptDone
   })
 
   const finalizeSwap = () => {
     if (swapDone) return
     swapDone   = true
     swapActive = false
-
-    if (swapSign) {
-      swapSign.plane.dispose()
-      swapSign.material.dispose()
-      swapSign.texture.dispose()
-      swapSign = null
-    }
+    swapCard.isVisible = false
 
     inventory?.setItem(0, null)
     inventory?.setItem(1, null)
@@ -238,23 +236,17 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
       duration: 4000,
     })
 
-    // Le robot active sa danse, on enchaîne sur la phase d'adoption
     robot?.playDance?.()
 
     adoptActive = true
+    inRange     = false
     scene.metadata.level3Phase = 'adopt'
-    inRange = false // force la re-création du panneau d'invite
-
-    adoptSign = makeSignText(scene, 'Appuyer sur B pour adopter', {
-      x: ROBOT_POS.x, y: ROBOT_POS.y + 3, z: ROBOT_POS.z,
-    })
-    adoptSign.plane.setEnabled(false)
 
     notifications?.show({
       id:         'objective',
       icon:       'fa-heart',
       title:      'Objectif',
-      message:    'Adoptez le robot (combinaison de flèches).',
+      message:    'Devenez ami avec le robot (combinaison de flèches).',
       persistent: true,
     })
   }
@@ -263,13 +255,7 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
     if (adoptDone) return
     adoptDone   = true
     adoptActive = false
-
-    if (adoptSign) {
-      adoptSign.plane.dispose()
-      adoptSign.material.dispose()
-      adoptSign.texture.dispose()
-      adoptSign = null
-    }
+    adoptCard.isVisible = false
 
     notifications?.dismiss('objective')
     notifications?.show({
@@ -280,7 +266,6 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
       duration: 5000,
     })
 
-    // Le robot devient compagnon et suit le joueur partout
     robot?.startFollowing?.()
 
     if (!completed) {
@@ -332,16 +317,14 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
   const doBAction = () => {
     if (modalOpen) return
     if (!inRange)  return
-    if (swapActive && !swapDone)  { openSwapModal();  return }
-    if (adoptActive && !adoptDone){ openAdoptModal(); return }
+    if (swapActive  && !swapDone)  { openSwapModal();  return }
+    if (adoptActive && !adoptDone) { openAdoptModal(); return }
   }
 
   const onKey = (e) => {
     if (e.key !== 'b' && e.key !== 'B') return
     if (scene.metadata?.currentLevel !== 3) return
     if (modalOpen) return
-    // pause manuelle (pause button) : on bloque ; la pause induite par la modale
-    // est court-circuitée par le check `modalOpen` au-dessus.
     if (scene.metadata?.paused) return
     if (scene.metadata?.dead) return
     doBAction()
@@ -355,21 +338,11 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
     swapDone    = true
     adoptActive = false
     adoptDone   = true
+    swapCard.isVisible  = false
+    adoptCard.isVisible = false
     scene.metadata.level3Phase = 'completed'
     for (const h of handles) {
       try { h.dispose?.() } catch {}
-    }
-    if (swapSign) {
-      swapSign.plane.dispose()
-      swapSign.material.dispose()
-      swapSign.texture.dispose()
-      swapSign = null
-    }
-    if (adoptSign) {
-      adoptSign.plane.dispose()
-      adoptSign.material.dispose()
-      adoptSign.texture.dispose()
-      adoptSign = null
     }
     inventory?.setItem(0, null)
     inventory?.setItem(1, null)
@@ -398,18 +371,8 @@ export async function loadLevel3(scene, { getHero, notifications, inventory, rob
       for (const h of handles) {
         try { h.dispose?.() } catch {}
       }
-      if (swapSign) {
-        swapSign.plane.dispose()
-        swapSign.material.dispose()
-        swapSign.texture.dispose()
-        swapSign = null
-      }
-      if (adoptSign) {
-        adoptSign.plane.dispose()
-        adoptSign.material.dispose()
-        adoptSign.texture.dispose()
-        adoptSign = null
-      }
+      robotAnchor.dispose()
+      try { gui.dispose() } catch {}
     },
   }
 }

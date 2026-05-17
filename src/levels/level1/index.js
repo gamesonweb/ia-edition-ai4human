@@ -2,6 +2,7 @@ import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader'
 
 import { spawnCollectibles }  from '../../scene/collectibles.js'
 import { showLevelComplete }  from '../../UI/levelComplete.js'
+import { playCutscene }       from '../../UI/cutscene.js'
 
 const LEVEL1_BASE = '/level/level1/'
 
@@ -173,7 +174,7 @@ async function importDecor(scene, file, positions, namePrefix, scale = 1, rotati
   return placed
 }
 
-export async function loadLevel1(scene, { getHero, notifications, inventory, onComplete } = {}) {
+export async function loadLevel1(scene, { getHero, notifications, inventory, onComplete, onCardReady } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel = 1
   scene.metadata.level1Phase  = 'cards'
@@ -264,31 +265,7 @@ export async function loadLevel1(scene, { getHero, notifications, inventory, onC
       onAllCollected: async () => {
         scene.metadata.level1Phase = 'stamps'
 
-        notifications.show({
-          icon:    'fa-circle-info',
-          title:   'Carte d\'identité créée',
-          message: 'Votre carte d\'identité a été réalisée par les moyens du bord. Volez des tampons officiels pour qu\'elle soit valide.',
-          duration: 12000,
-        })
-
-        notifications.show({
-          id:         'objective',
-          icon:       'fa-stamp',
-          title:      'Objectif',
-          message:    'Récupérez les 2 tampons officiels dans la zone.',
-          persistent: true,
-        })
-
-        notifications.show({
-          id:         'police-warning',
-          icon:       'fa-triangle-exclamation',
-          variant:    'warning',
-          title:      'Surveillance active',
-          message:    'Les robots IA policier surveillent cette zone. Récupérez vite, sinon vous perdez des vies.',
-          persistent: true,
-        })
-
-        // ---------------- PHASE 2 : récupérer les 2 tampons ----------------
+        // ---------------- PHASE 2 : spawner les tampons d'abord ----------------
         const stampsHandle = await spawnCollectibles(scene, {
           basePath: LEVEL1_BASE,
           file:     'stamp.glb',
@@ -316,6 +293,7 @@ export async function loadLevel1(scene, { getHero, notifications, inventory, onC
             scene.metadata.level1Phase = 'completed'
             notifications.dismiss('objective')
             notifications.dismiss('police-warning')
+            onCardReady?.()
             showCarteId(() => {
               showLevelComplete({
                 title:    'Manche 1 terminée',
@@ -327,6 +305,42 @@ export async function loadLevel1(scene, { getHero, notifications, inventory, onC
           },
         })
         if (stampsHandle) collectiblesHandles.push(stampsHandle)
+
+        // ---- Cutscene maintenant que les tampons sont visibles ----
+        await new Promise(resolve => {
+          scene.metadata.activeCutscene?.skip()
+          scene.metadata.activeCutscene = playCutscene(scene, [
+            {
+              pos: [77, 4.5, 302], tar: [87, 0.8, 302],
+              subtitle: "Carte d'identité constituée. Il lui manque les tampons officiels.",
+              hold: 3000, move: 1800,
+            },
+            {
+              pos: [-49, 4.5, 300], tar: [-39, 0.8, 300],
+              subtitle: "Deux tampons officiels sont gardés dans le secteur.",
+              hold: 3000,
+            },
+          ], { chapter: 'Manche 1 — Phase 2', onDone: resolve })
+        })
+        if (level1Skipped) return
+
+        notifications.show({
+          icon:    'fa-circle-info',
+          title:   'Carte d\'identité créée',
+          message: 'Votre carte d\'identité a été réalisée par les moyens du bord. Volez des tampons officiels pour qu\'elle soit valide.',
+          duration: 12000,
+        })
+        notifications.show({
+          id: 'objective', icon: 'fa-stamp',
+          title: 'Objectif', message: 'Récupérez les 2 tampons officiels dans la zone.',
+          persistent: true,
+        })
+        notifications.show({
+          id: 'police-warning', icon: 'fa-triangle-exclamation', variant: 'warning',
+          title: 'Surveillance active',
+          message: 'Les robots IA policier surveillent cette zone. Récupérez vite, sinon vous perdez des vies.',
+          persistent: true,
+        })
       },
     })
     if (cardsHandle) collectiblesHandles.push(cardsHandle)

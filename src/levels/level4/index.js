@@ -92,7 +92,7 @@ export const LEVEL4_INTRO = {
  *   onComplete?: () => void,
  * }} [opts]
  */
-export async function loadLevel4(scene, { getHero, notifications, robot, onComplete } = {}) {
+export async function loadLevel4(scene, { getHero, notifications, robot, onComplete, onTeleport } = {}) {
   if (!scene.metadata) scene.metadata = {}
   scene.metadata.currentLevel = 4
   scene.metadata.level4Phase  = 'find-computer'
@@ -248,6 +248,7 @@ export async function loadLevel4(scene, { getHero, notifications, robot, onCompl
       message: 'Vous êtes désormais enregistré comme robot autorisé.',
       duration: 5000,
     })
+    onTeleport?.()
     showLevelComplete({
       title:    'Manche 4 terminée',
       subtitle: 'L\'usine vous reconnaît comme robot.',

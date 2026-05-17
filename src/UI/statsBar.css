@@ -1,43 +1,46 @@
 #stats-bar {
   position: fixed;
-  top: 228px;          /* 16 (top map) + 200 (map) + 12 (gap) */
+  top: 228px;
   right: 16px;
-  width: 200px;
   display: flex;
-  justify-content: space-around;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   z-index: 100;
   pointer-events: none;
   user-select: none;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.stat-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(to bottom, rgb(8, 6, 4), rgb(0, 0, 0));
+.stat-timer-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  gap: 10px;
 }
 
-.stat-circle i {
-  font-size: 16px;
-  color: #ffffff;
-}
-
-.stat-value {
-  color: #ffffff;
-  font-family: 'Courier New', Courier, monospace;
+.stat-timer-icon {
   font-size: 13px;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.stat-timer-value {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.stat-player-name {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(103, 232, 249, 0.75);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  line-height: 1;
 }

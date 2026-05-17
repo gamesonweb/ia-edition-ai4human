@@ -74,6 +74,7 @@ export const setupPlayerStats = ({ maxHealth = 100, maxShield = 100 } = {}) => {
   let h = maxHealth
   let s = maxShield
   let dead = false
+  let invincible = false
   const callbacks = {}
 
   const renderHealth = () => {
@@ -105,8 +106,9 @@ export const setupPlayerStats = ({ maxHealth = 100, maxShield = 100 } = {}) => {
     element: container,
     setHealth: (v) => { h = clamp(v, 0, maxHealth); renderHealth() },
     setShield: (v) => { s = clamp(v, 0, maxShield); renderShield() },
+    setInvincible: (v) => { invincible = v },
     damage:    (amount) => {
-      if (amount <= 0) return
+      if (invincible || amount <= 0) return
       let dmg = amount
       if (s > 0) { const absorbed = Math.min(s, dmg); s -= absorbed; dmg -= absorbed; renderShield() }
       if (dmg > 0) { h = clamp(h - dmg, 0, maxHealth); renderHealth() }

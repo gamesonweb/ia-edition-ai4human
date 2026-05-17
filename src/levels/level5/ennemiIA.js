@@ -124,7 +124,7 @@ let _ennemiCounter = 0
  *   onDeath?: () => void,
  * }} opts
  */
-export async function spawnEnnemi(scene, { file, position, getHero, damagePlayer, onDeath } = {}) {
+export async function spawnEnnemi(scene, { file, position, getHero, damagePlayer, onDeath, wanderZone } = {}) {
   const id     = _ennemiCounter++
   const stats  = PRESETS[file] ?? PRESETS['ennemiIA_3.glb']
 
@@ -184,13 +184,21 @@ export async function spawnEnnemi(scene, { file, position, getHero, damagePlayer
   let state    = STATE.WANDER
   let shootCD  = 0
 
-  // Wander : cible aléatoire autour du point de spawn
+  // Wander : cible aléatoire dans la zone (wanderZone) ou autour du spawn
   const spawnX = position.x, spawnZ = position.z
   let wanderTarget = null
   const pickWanderTarget = () => {
     const angle = Math.random() * Math.PI * 2
-    const dist  = 8 + Math.random() * WANDER_RADIUS
-    wanderTarget = { x: spawnX + Math.cos(angle) * dist, z: spawnZ + Math.sin(angle) * dist }
+    if (wanderZone) {
+      const dist = Math.random() * wanderZone.radius
+      wanderTarget = {
+        x: wanderZone.cx + Math.cos(angle) * dist,
+        z: wanderZone.cz + Math.sin(angle) * dist,
+      }
+    } else {
+      const dist = 8 + Math.random() * WANDER_RADIUS
+      wanderTarget = { x: spawnX + Math.cos(angle) * dist, z: spawnZ + Math.sin(angle) * dist }
+    }
   }
   pickWanderTarget()
 
@@ -278,6 +286,17 @@ export async function spawnEnnemi(scene, { file, position, getHero, damagePlayer
       }
 
       case STATE.PURSUIT: {
+        // Retour en wander si l'ennemi dépasse 1.5× le rayon de sa zone
+        if (wanderZone) {
+          const fromCx = root.position.x - wanderZone.cx
+          const fromCz = root.position.z - wanderZone.cz
+          const limit  = wanderZone.radius * 1.5
+          if (fromCx * fromCx + fromCz * fromCz > limit * limit) {
+            state = STATE.WANDER
+            wanderTarget = null
+            break
+          }
+        }
         const step = stats.speed * dt
         root.moveWithCollisions(new Vector3((dx / dist) * step, -ENEMY_GRAVITY * dt, (dz / dist) * step))
         playAnim(walkAnim ?? idleAnim)

@@ -14,7 +14,7 @@ import { showLevelComplete }      from '../../UI/levelComplete.js'
 const ROBOT_BASE_PATH = '/level/level8/'
 const ROBOT_FILE      = 'robotAgent.glb'
 const SCAN_DIST       = 14   // distance K pour scanner
-const INTERACT_DIST   = 5    // distance E pour synchroniser
+const INTERACT_DIST   = 15   // distance E pour synchroniser
 
 const ROBOTS = [
   {

@@ -1,0 +1,264 @@
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#tutorial-overlay.tut-visible {
+  opacity: 1;
+}
+
+#tutorial-overlay.tut-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tut-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(to top, rgba(4, 5, 14, 0.92) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ---- Skip ---- */
+.tut-skip {
+  position: absolute;
+  bottom: 28px;
+  right: 36px;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 7px 18px 7px 14px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.tut-skip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #fff;
+  transform: scale(1.04);
+}
+
+.tut-skip svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---- Interact prompt (E) ---- */
+.tut-interact-prompt {
+  position: absolute;
+  bottom: 230px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(8, 10, 22, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(103, 232, 249, 0.45);
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: #fff;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  animation: tut-float 2s ease-in-out infinite;
+}
+
+.tut-interact-prompt[hidden] {
+  display: none;
+}
+
+@keyframes tut-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* ---- Card ---- */
+.tut-card {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 94vw);
+  background: rgba(8, 10, 22, 0.84);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  border-radius: 14px;
+  padding: 20px 26px 18px;
+  pointer-events: auto;
+}
+
+/* ---- Progress bar ---- */
+.tut-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+
+.tut-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+  flex-shrink: 0;
+}
+
+.tut-dot.is-done {
+  background: rgba(74, 222, 128, 0.85);
+  transform: scale(1.1);
+}
+
+.tut-dot.is-active {
+  background: rgba(103, 232, 249, 0.9);
+  transform: scale(1.35);
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.6);
+}
+
+.tut-progress-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.tut-step-count {
+  margin-left: 6px;
+  font-family: 'Rajdhani', 'Segoe UI', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  color: rgba(103, 232, 249, 0.7);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---- Step body ---- */
+.tut-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.tut-title {
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.tut-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.tut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-family: 'Rajdhani', 'Segoe UI', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.tut-key.is-pressed {
+  background: rgba(103, 232, 249, 0.18);
+  border-color: rgba(103, 232, 249, 0.85);
+  color: #67e8f9;
+  box-shadow: 0 0 10px rgba(103, 232, 249, 0.3), 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.tut-key-sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.78rem;
+  padding: 0 2px;
+}
+
+.tut-desc {
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+/* ---- Status ---- */
+.tut-status {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', 'Segoe UI', monospace;
+  font-size: 0.73rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(103, 232, 249, 0.65);
+}
+
+.tut-status::before {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  animation: tut-blink 1.2s ease-in-out infinite;
+}
+
+.tut-status.is-done {
+  color: rgba(74, 222, 128, 0.9);
+}
+
+.tut-status.is-done::before {
+  animation: none;
+  background: rgba(74, 222, 128, 0.9);
+}
+
+@keyframes tut-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+/* Flash carte au succès */
+@keyframes tut-flash {
+  0%   { border-color: rgba(74, 222, 128, 0.9); box-shadow: 0 0 24px rgba(74, 222, 128, 0.35); }
+  100% { border-color: rgba(103, 232, 249, 0.2); box-shadow: none; }
+}
+
+.tut-card.step-done {
+  animation: tut-flash 0.65s ease forwards;
+}

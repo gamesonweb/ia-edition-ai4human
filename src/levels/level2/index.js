@@ -1,9 +1,13 @@
 import { SceneLoader }       from '@babylonjs/core/Loading/sceneLoader'
 import { MeshBuilder }       from '@babylonjs/core/Meshes/meshBuilder'
-import { Mesh }              from '@babylonjs/core/Meshes/mesh'
 import { StandardMaterial }  from '@babylonjs/core/Materials/standardMaterial'
-import { DynamicTexture }    from '@babylonjs/core/Materials/Textures/dynamicTexture'
 import { Color3 }            from '@babylonjs/core/Maths/math.color'
+
+import { AdvancedDynamicTexture } from '@babylonjs/gui/2D/advancedDynamicTexture'
+import { Rectangle }              from '@babylonjs/gui/2D/controls/rectangle'
+import { TextBlock }              from '@babylonjs/gui/2D/controls/textBlock'
+import { StackPanel }             from '@babylonjs/gui/2D/controls/stackPanel'
+import { Control }                from '@babylonjs/gui/2D/controls/control'
 
 import { spawnRobot }        from './robot.js'
 import { showLevelComplete } from '../../UI/levelComplete.js'
@@ -20,12 +24,9 @@ const TUBE_POS    = { x: 88.99, y: 0.14, z: 313.93 }
 const TUBE_HEIGHT     = 4
 const TUBE_DIAMETER   = 2.2
 const PICKUP_RADIUS   = 3.5
+const BILLBOARD_RADIUS = 14
 const TASK_DURATION_MS = 60_000
 
-// Ligne séparant le camp de la zone sûre.
-// La "zone" (où le joueur doit être pour échapper aux policiers IA) est
-// au nord de cette ligne (z > zLigne). Tant que le joueur est au sud
-// (z < zLigne), le compteur de 1 minute tourne.
 const BOUNDARY = {
   A: { x: 86.24, z: 295.73 },
   B: { x: 57.34, z: 296.58 },
@@ -51,32 +52,70 @@ export const LEVEL2_INTRO = {
   duration: 6000,
 }
 
-function createSignText(scene, text, position) {
-  const resolution = 512
-  const tex = new DynamicTexture('level2-sign-tex', resolution, scene, true)
-  tex.hasAlpha = true
+function makePromptCard(gui, anchor, { key, label, color, shadowColor }) {
+  const card = new Rectangle()
+  card.width        = '340px'
+  card.height       = '72px'
+  card.cornerRadius = 12
+  card.thickness    = 2
+  card.color        = color
+  card.background   = 'rgba(8, 12, 22, 0.85)'
+  card.shadowColor  = shadowColor
+  card.shadowBlur   = 18
+  card.linkOffsetY  = -120
+  card.isVisible    = false
+  gui.addControl(card)
+  card.linkWithMesh(anchor)
 
-  const ctx = tex.getContext()
-  ctx.clearRect(0, 0, resolution, resolution)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-  ctx.fillRect(0, resolution * 0.25, resolution, resolution * 0.5)
-  tex.drawText(text, null, resolution / 2 + 26, 'bold 52px "Segoe UI", Arial', '#FF8C00', null, true, true)
+  const stack = new StackPanel()
+  stack.isVertical = false
+  stack.spacing    = 14
+  stack.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER
+  card.addControl(stack)
 
-  const mat = new StandardMaterial('level2-sign-mat', scene)
-  mat.diffuseTexture            = tex
-  mat.emissiveColor             = new Color3(1, 1, 1)
-  mat.specularColor             = new Color3(0, 0, 0)
-  mat.useAlphaFromDiffuseTexture = true
-  mat.backFaceCulling           = false
+  const badge = new Rectangle()
+  badge.width        = '40px'
+  badge.height       = '40px'
+  badge.cornerRadius = 6
+  badge.thickness    = 2
+  badge.color        = color
+  badge.background   = `rgba(${hexToRgb(color)}, 0.18)`
+  stack.addControl(badge)
 
-  const plane = MeshBuilder.CreatePlane('level2-sign', { width: 6, height: 3 }, scene)
-  plane.material        = mat
-  plane.position.set(position.x, position.y, position.z)
-  plane.billboardMode   = Mesh.BILLBOARDMODE_ALL
-  plane.isPickable      = false
-  plane.checkCollisions = false
+  const keyTb = new TextBlock()
+  keyTb.text       = key
+  keyTb.color      = '#f3f6ff'
+  keyTb.fontWeight = 'bold'
+  keyTb.fontSize   = 22
+  keyTb.fontFamily = '"Segoe UI", system-ui, sans-serif'
+  badge.addControl(keyTb)
 
-  return { plane, material: mat, texture: tex }
+  const labelTb = new TextBlock()
+  labelTb.text        = label
+  labelTb.color       = '#f3f6ff'
+  labelTb.fontSize    = 16
+  labelTb.fontWeight  = '600'
+  labelTb.fontFamily  = '"Segoe UI", system-ui, sans-serif'
+  labelTb.resizeToFit = true
+  stack.addControl(labelTb)
+
+  return card
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r}, ${g}, ${b}`
+}
+
+function makeAnchor(name, scene, pos, yOffset = 0) {
+  const a = MeshBuilder.CreatePlane(name, { size: 0.01 }, scene)
+  a.position.set(pos.x, pos.y + yOffset, pos.z)
+  a.isVisible      = false
+  a.isPickable     = false
+  a.checkCollisions = false
+  return a
 }
 
 async function importSoldier(scene, position) {
@@ -90,7 +129,6 @@ async function importSoldier(scene, position) {
   root.rotationQuaternion = null
   root.scaling.setAll(1.1)
   root.position.set(position.x, position.y, position.z)
-  // orientation demandée : -80°
   root.rotation.y = -80 * Math.PI / 180
 
   for (const m of root.getChildMeshes(false)) {
@@ -124,17 +162,23 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
   tube.isPickable      = false
   tube.checkCollisions = false
 
-  // ----- Texte 3D "Montrer le passport" au-dessus du tube -----
-  const sign = createSignText(scene, 'Montrer le passport', {
-    x: TUBE_POS.x,
-    y: TUBE_POS.y + TUBE_HEIGHT + 1.2,
-    z: TUBE_POS.z,
+  // ----- GUI billboards (style level 4) -----
+  const gui = AdvancedDynamicTexture.CreateFullscreenUI('level2-gui', true, scene)
+  gui.idealWidth = 1920
+
+  // Billboard 1 — Montrer le passeport
+  const signAnchor   = makeAnchor('l2-sign-anchor',    scene, TUBE_POS,    TUBE_HEIGHT + 2.5)
+  const signCard     = makePromptCard(gui, signAnchor, {
+    key:         '!',
+    label:       'Montrer le passeport',
+    color:       '#FF8C00',
+    shadowColor: '#FF8C00',
   })
 
-  // ----- Soldat à la position de l'autorité -----
+  // ----- Soldat -----
   const soldier = await importSoldier(scene, SOLDIER_POS)
 
-  // ----- Zone de dépôt (créée masquée, révélée après pickup) -----
+  // ----- Zone de dépôt -----
   const depositMat = new StandardMaterial('level2-deposit-mat', scene)
   const depositColor = Color3.FromHexString('#4ADE80')
   depositMat.diffuseColor    = depositColor
@@ -154,17 +198,19 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
   depositTube.checkCollisions = false
   depositTube.setEnabled(false)
 
-  const depositSign = createSignText(scene, 'Déposer le robot', {
-    x: DEPOSIT_POS.x,
-    y: DEPOSIT_POS.y + TUBE_HEIGHT + 1.2,
-    z: DEPOSIT_POS.z,
+  // Billboard 3 — Déposer le robot
+  const depositAnchor   = makeAnchor('l2-deposit-anchor', scene, DEPOSIT_POS, TUBE_HEIGHT + 2.5)
+  const depositSignCard = makePromptCard(gui, depositAnchor, {
+    key:         '→',
+    label:       'Déposer le robot',
+    color:       '#4ADE80',
+    shadowColor: '#4ADE80',
   })
-  depositSign.plane.setEnabled(false)
 
   let depositActive = false
   let depositDone   = false
 
-  // ----- Robot contaminé (IA steering : pursuit / attack / retreat / dead) -----
+  // ----- Robot contaminé -----
   const robot = await spawnRobot(scene, {
     position:     ROBOT_POS,
     getHero,
@@ -174,7 +220,7 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     onPickup: () => {
       depositActive = true
       depositTube.setEnabled(true)
-      depositSign.plane.setEnabled(true)
+      depositAnchor.setEnabled(true)
       notifications?.show({
         id:         'objective',
         icon:       'fa-box',
@@ -194,15 +240,18 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     if (!hero) return
     const dx = hero.position.x - DEPOSIT_POS.x
     const dz = hero.position.z - DEPOSIT_POS.z
-    if (dx*dx + dz*dz < PICKUP_RADIUS * PICKUP_RADIUS) {
+    const dDistSq = dx*dx + dz*dz
+    depositSignCard.isVisible = dDistSq <= BILLBOARD_RADIUS * BILLBOARD_RADIUS
+
+    if (dDistSq < PICKUP_RADIUS * PICKUP_RADIUS) {
       depositDone   = true
       depositActive = false
       depositTube.setEnabled(false)
-      depositSign.plane.setEnabled(false)
+      depositSignCard.isVisible = false
+      depositAnchor.setEnabled(false)
       inventory?.setItem(0, null)
       notifications?.dismiss('objective')
 
-      // Robot affiché à la position de dépôt en anim idle (reste visible aussi sur le level 3)
       robot?.placeAsIdle(DEPOSIT_POS)
 
       scene.metadata.level2Phase = 'completed'
@@ -216,7 +265,7 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     }
   })
 
-  // ----- Objectif affiché -----
+  // ----- Objectif -----
   notifications?.show({
     id:         'objective',
     icon:       'fa-id-badge',
@@ -225,12 +274,11 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     persistent: true,
   })
 
-  // ----- Timer 60s + détection proximité -----
+  // ----- Timer 60s -----
   const taskStart   = performance.now()
   let taskDone      = false
   let timeoutFired  = false
 
-  // ----- Garde-frontière (activée après la remise du passeport) -----
   let boundaryWatchActive  = false
   let wasOutside           = false
   let outsideStart         = null
@@ -247,14 +295,15 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
   updateTimerNotif()
   const tickId = setInterval(updateTimerNotif, 1000)
 
-  // Garde-visibilité : décor level 2 caché si on n'est pas sur le level 2
+  // Garde-visibilité
   let level2Active = null
   const visObserver = scene.onBeforeRenderObservable.add(() => {
     const isLevel2 = scene.metadata?.currentLevel === 2
     if (isLevel2 === level2Active) return
     level2Active = isLevel2
     tube.setEnabled(isLevel2 && !taskDone)
-    sign.plane.setEnabled(isLevel2 && !taskDone)
+    signAnchor.setEnabled(isLevel2 && !taskDone)
+    if (!isLevel2) signCard.isVisible = false
     if (soldier) soldier.setEnabled(isLevel2)
   })
 
@@ -264,7 +313,8 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     scene.metadata.level2Phase = 'leave-camp'
 
     tube.setEnabled(false)
-    sign.plane.setEnabled(false)
+    signCard.isVisible = false
+    signAnchor.setEnabled(false)
 
     clearInterval(tickId)
     hideGameTimer()
@@ -297,13 +347,13 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     hideGameTimer()
     notifications?.dismiss('objective')
     notifications?.show({
-      icon:    'fa-triangle-exclamation',
+      icon:    'fa-skull',
       variant: 'warning',
       title:   'Temps écoulé',
       message: 'Vous n\'avez pas montré votre passeport à temps.',
-      duration: 5000,
+      duration: 3000,
     })
-    damage?.(100)
+    setTimeout(() => damage?.(999), 1000)
   }
 
   const proxObserver = scene.onBeforeRenderObservable.add(() => {
@@ -321,12 +371,14 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     if (!hero) return
     const dx = hero.position.x - TUBE_POS.x
     const dz = hero.position.z - TUBE_POS.z
-    if (dx * dx + dz * dz < PICKUP_RADIUS * PICKUP_RADIUS) {
+    const distSq = dx * dx + dz * dz
+    signCard.isVisible = distSq <= BILLBOARD_RADIUS * BILLBOARD_RADIUS
+    if (distSq < PICKUP_RADIUS * PICKUP_RADIUS) {
       onPassportShown()
     }
   })
 
-  // ----- Surveillance de la sortie du camp (active après le passeport) -----
+  // ----- Surveillance sortie du camp -----
   const updateBoundaryNotif = () => {
     if (!boundaryWatchActive || !wasOutside || outsideStart == null) return
     if (policeNotified) return
@@ -348,13 +400,11 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     const outside = isOutsideZone(hero.position.x, hero.position.z)
 
     if (outside && !wasOutside) {
-      // Vient de franchir la ligne vers l'extérieur
       outsideStart   = performance.now()
       policeNotified = false
       showGameTimer({ total: POLICE_DURATION_MS / 1000, label: 'Rentrez dans la zone' })
       updateBoundaryNotif()
     } else if (!outside && wasOutside) {
-      // Est rentré dans la zone
       outsideStart   = null
       policeNotified = false
       hideGameTimer()
@@ -383,17 +433,16 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     if (skipped) return
     skipped = true
 
-    // 1) Phase passeport : tube + sign + timer
     if (!taskDone) {
       taskDone = true
       scene.metadata.level2Phase = 'leave-camp'
-      try { tube.setEnabled(false) } catch {}
-      try { sign.plane.setEnabled(false) } catch {}
-      try { clearInterval(tickId) } catch {}
-      try { hideGameTimer() } catch {}
+      tube.setEnabled(false)
+      signCard.isVisible = false
+      signAnchor.setEnabled(false)
+      clearInterval(tickId)
+      hideGameTimer()
     }
 
-    // 2) Phase robot : on l'abat instantanément et on le marque "récupéré"
     try {
       if (typeof robot?.getHp === 'function' && robot.getHp() > 0) {
         robot.damage?.(9999)
@@ -403,10 +452,10 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
     wasOutside          = false
     outsideStart        = null
 
-    // 3) Phase dépôt : on le pose direct à la zone de dépôt
-    try { robot?.placeAsIdle?.(DEPOSIT_POS) } catch {}
-    try { depositTube.setEnabled(false) } catch {}
-    try { depositSign.plane.setEnabled(false) } catch {}
+    robot?.placeAsIdle?.(DEPOSIT_POS)
+    depositTube.setEnabled(false)
+    depositSignCard.isVisible = false
+    depositAnchor.setEnabled(false)
     depositActive = false
     depositDone   = true
     inventory?.setItem(0, null)
@@ -422,15 +471,12 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
       duration: 3500,
     })
 
-    // 4) Avance vers le level 3
     setTimeout(() => onComplete?.(), 600)
-    return // évite l'ancien appel à onPassportShown qui suivait
   }
 
   return {
     soldier,
     tube,
-    sign,
     robot,
     skip,
     dispose: () => {
@@ -442,14 +488,11 @@ export async function loadLevel2(scene, { getHero, notifications, damage, invent
       clearInterval(boundaryTickId)
       tube.dispose()
       tubeMat.dispose()
-      sign.plane.dispose()
-      sign.material.dispose()
-      sign.texture.dispose()
+      signAnchor.dispose()
       depositTube.dispose()
       depositMat.dispose()
-      depositSign.plane.dispose()
-      depositSign.material.dispose()
-      depositSign.texture.dispose()
+      depositAnchor.dispose()
+      try { gui.dispose() } catch {}
       soldier?.dispose()
       robot?.dispose()
     },

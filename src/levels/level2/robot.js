@@ -5,6 +5,12 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
 import { DynamicTexture }   from '@babylonjs/core/Materials/Textures/dynamicTexture'
 import { Color3 }           from '@babylonjs/core/Maths/math.color'
 
+import { AdvancedDynamicTexture } from '@babylonjs/gui/2D/advancedDynamicTexture'
+import { Rectangle }              from '@babylonjs/gui/2D/controls/rectangle'
+import { TextBlock }              from '@babylonjs/gui/2D/controls/textBlock'
+import { StackPanel }             from '@babylonjs/gui/2D/controls/stackPanel'
+import { Control }                from '@babylonjs/gui/2D/controls/control'
+
 const ROBOT_BASE = '/level/level2/'
 const ROBOT_FILE = 'robot.glb'
 
@@ -19,7 +25,7 @@ const STATS = {
   punchDamage:     10,    // dégâts par coup au joueur
   playerAttackRange: 8,
   playerAttackDmg:   25,
-  pickupRange:       5,
+  pickupRange:       15,
 }
 
 function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -231,33 +237,6 @@ function makeSpeechPanel(scene) {
   }
 }
 
-function makeSignText(scene, text, position) {
-  const resolution = 512
-  const tex = new DynamicTexture('robot-pickup-tex', resolution, scene, true)
-  tex.hasAlpha = true
-
-  const ctx = tex.getContext()
-  ctx.clearRect(0, 0, resolution, resolution)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-  ctx.fillRect(0, resolution * 0.25, resolution, resolution * 0.5)
-  tex.drawText(text, null, resolution / 2 + 18, 'bold 52px "Segoe UI", Arial', '#4ADE80', null, true, true)
-
-  const mat = new StandardMaterial('robot-pickup-mat', scene)
-  mat.diffuseTexture            = tex
-  mat.emissiveColor             = new Color3(1, 1, 1)
-  mat.specularColor             = new Color3(0, 0, 0)
-  mat.useAlphaFromDiffuseTexture = true
-  mat.backFaceCulling           = false
-
-  const plane = MeshBuilder.CreatePlane('robot-pickup-sign', { width: 6, height: 3 }, scene)
-  plane.material        = mat
-  plane.position.set(position.x, position.y, position.z)
-  plane.billboardMode   = Mesh.BILLBOARDMODE_ALL
-  plane.isPickable      = false
-  plane.checkCollisions = false
-
-  return { plane, material: mat, texture: tex }
-}
 
 const STATE = {
   IDLE:      'idle',
@@ -380,25 +359,74 @@ export async function spawnRobot(scene, {
     speechHideAt = performance.now() + Math.max(1000, durationMs)
   }
 
-  // Panneau 3D "Appuyer sur B" affiché après la mort
-  let pickupSign = null
-  let pickedUp   = false
+  // Billboard GUI "Récupérer le robot" (style level 4, suit le robot)
+  let pickedUp = false
 
-  const showPickupSign = () => {
-    if (pickupSign) return
-    pickupSign = makeSignText(
-      scene,
-      'Appuyer sur B pour le récupérer',
-      { x: root.position.x, y: root.position.y + 3, z: root.position.z },
-    )
-  }
-  const hidePickupSign = () => {
-    if (!pickupSign) return
-    pickupSign.plane.dispose()
-    pickupSign.material.dispose()
-    pickupSign.texture.dispose()
-    pickupSign = null
-  }
+  const guiRobot = AdvancedDynamicTexture.CreateFullscreenUI('robot-pickup-gui', true, scene)
+  guiRobot.idealWidth = 1920
+
+  const pickupAnchor = MeshBuilder.CreatePlane('robot-pickup-anchor', { size: 0.01 }, scene)
+  pickupAnchor.position.set(root.position.x, root.position.y + 3.5, root.position.z)
+  pickupAnchor.isVisible      = false
+  pickupAnchor.isPickable     = false
+  pickupAnchor.checkCollisions = false
+
+  const pickupCard = new Rectangle('robot-pickup-card')
+  pickupCard.width        = '340px'
+  pickupCard.height       = '72px'
+  pickupCard.cornerRadius = 12
+  pickupCard.thickness    = 2
+  pickupCard.color        = '#4ADE80'
+  pickupCard.background   = 'rgba(8, 12, 22, 0.85)'
+  pickupCard.shadowColor  = '#4ADE80'
+  pickupCard.shadowBlur   = 18
+  pickupCard.linkOffsetY  = -120
+  pickupCard.isVisible    = false
+  guiRobot.addControl(pickupCard)
+  pickupCard.linkWithMesh(pickupAnchor)
+
+  const pickupStack = new StackPanel('robot-pickup-stack')
+  pickupStack.isVertical = false
+  pickupStack.spacing    = 14
+  pickupStack.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER
+  pickupCard.addControl(pickupStack)
+
+  const pickupBadge = new Rectangle('robot-pickup-badge')
+  pickupBadge.width        = '40px'
+  pickupBadge.height       = '40px'
+  pickupBadge.cornerRadius = 6
+  pickupBadge.thickness    = 2
+  pickupBadge.color        = '#A78BFA'
+  pickupBadge.background   = 'rgba(124, 156, 255, 0.18)'
+  pickupStack.addControl(pickupBadge)
+
+  const pickupKey = new TextBlock('robot-pickup-key')
+  pickupKey.text       = 'B'
+  pickupKey.color      = '#f3f6ff'
+  pickupKey.fontWeight = 'bold'
+  pickupKey.fontSize   = 22
+  pickupKey.fontFamily = '"Segoe UI", system-ui, sans-serif'
+  pickupBadge.addControl(pickupKey)
+
+  const pickupLabel = new TextBlock('robot-pickup-label')
+  pickupLabel.text        = 'Récupérer le robot'
+  pickupLabel.color       = '#f3f6ff'
+  pickupLabel.fontSize    = 16
+  pickupLabel.fontWeight  = '600'
+  pickupLabel.fontFamily  = '"Segoe UI", system-ui, sans-serif'
+  pickupLabel.resizeToFit = true
+  pickupStack.addControl(pickupLabel)
+
+  // Suit le robot et gère la visibilité par proximité
+  const pickupAnchorObs = scene.onBeforeRenderObservable.add(() => {
+    pickupAnchor.position.set(root.position.x, root.position.y + 3.5, root.position.z)
+    if (state !== STATE.DEAD || pickedUp) { pickupCard.isVisible = false; return }
+    const hero = getHero?.()
+    if (!hero) { pickupCard.isVisible = false; return }
+    const dx = hero.position.x - root.position.x
+    const dz = hero.position.z - root.position.z
+    pickupCard.isVisible = dx*dx + dz*dz <= 12 * 12
+  })
 
   // Visibilité gate (le robot déposé ou en mode follow reste visible partout)
   let lastActive = null
@@ -411,7 +439,7 @@ export async function spawnRobot(scene, {
         !pickedUp) {
       root.setEnabled(isLevel2)
     }
-    if (pickupSign) pickupSign.plane.setEnabled(isLevel2)
+
   })
 
   // Steering / IA (mêlée — plus de balles)
@@ -540,7 +568,7 @@ export async function spawnRobot(scene, {
         message: 'La menace est neutralisée.',
         duration: 4000,
       })
-      showPickupSign()
+      pickupCard.isVisible = true
     }
   }
 
@@ -553,7 +581,7 @@ export async function spawnRobot(scene, {
     if (dx*dx + dz*dz > STATS.pickupRange * STATS.pickupRange) return
 
     pickedUp = true
-    hidePickupSign()
+    pickupCard.isVisible = false
     root.setEnabled(false)
     inventory?.setItem(0, { name: 'Robot', icon: '/img/inventaire/robot.png', rarity: 'rare' })
     notifications?.show({
@@ -644,7 +672,9 @@ export async function spawnRobot(scene, {
       scene.onBeforeRenderObservable.remove(speechObserver)
       speech.dispose()
       healthBar.dispose()
-      hidePickupSign()
+      scene.onBeforeRenderObservable.remove(pickupAnchorObs)
+      pickupAnchor.dispose()
+      try { guiRobot.dispose() } catch {}
       if (scene.metadata?.robotHandle?.getRoot?.() === root) {
         delete scene.metadata.robotHandle
       }

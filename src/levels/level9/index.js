@@ -24,62 +24,53 @@ export const LEVEL9_INTRO = {
   duration: 7000,
 }
 
-// ─── Panneau de sécurité (entrée de l'usine) ─────────────────────────────────
+// ─── Marqueur de localisation (cylindre rouge transparent) ───────────────────
 function createFactoryPanel(scene) {
-  // Porte
-  const door = MeshBuilder.CreateBox('factory_door', { width: 3, height: 4, depth: 0.3 }, scene)
-  door.position.set(FACTORY_POS.x, FACTORY_POS.y + 2, FACTORY_POS.z)
-  door.isPickable = false
-  const doorMat = new StandardMaterial('factory_door_mat', scene)
-  doorMat.diffuseColor  = new Color3(0.08, 0.08, 0.14)
-  doorMat.emissiveColor = new Color3(0.02, 0.02, 0.06)
-  doorMat.specularColor = new Color3(0.3, 0.3, 0.4)
-  door.material = doorMat
+  const HEIGHT   = 4
+  const DIAMETER = 2.2
 
-  // Cadre lumineux
-  const frame = MeshBuilder.CreateBox('factory_frame', { width: 3.3, height: 4.3, depth: 0.15 }, scene)
-  frame.position.set(FACTORY_POS.x, FACTORY_POS.y + 2, FACTORY_POS.z - 0.1)
-  frame.isPickable = false
-  const frameMat = new StandardMaterial('factory_frame_mat', scene)
-  frameMat.emissiveColor  = new Color3(0.6, 0.1, 0.1)
-  frameMat.disableLighting = true
-  frame.material = frameMat
+  const mat = new StandardMaterial('factory_tube_mat', scene)
+  mat.diffuseColor    = new Color3(0.9, 0.1, 0.1)
+  mat.emissiveColor   = new Color3(0.6, 0.05, 0.05)
+  mat.specularColor   = new Color3(0, 0, 0)
+  mat.alpha           = 0.35
+  mat.backFaceCulling = false
 
-  // Panneau de saisie (boîtier)
-  const panel = MeshBuilder.CreateBox('factory_panel', { width: 0.6, height: 0.9, depth: 0.15 }, scene)
-  panel.position.set(FACTORY_POS.x + 1.8, FACTORY_POS.y + 1.3, FACTORY_POS.z - 0.25)
-  panel.isPickable = false
-  const panelMat = new StandardMaterial('factory_panel_mat', scene)
-  panelMat.emissiveColor  = new Color3(0.05, 0.15, 0.4)
-  panelMat.disableLighting = true
-  panel.material = panelMat
+  const tube = MeshBuilder.CreateCylinder('factory_tube', {
+    diameter: DIAMETER, height: HEIGHT, tessellation: 24,
+  }, scene)
+  tube.material        = mat
+  tube.position.set(FACTORY_POS.x, FACTORY_POS.y + HEIGHT / 2, FACTORY_POS.z)
+  tube.isPickable      = false
+  tube.checkCollisions = false
 
-  // Halo au sol
-  const halo = MeshBuilder.CreateDisc('factory_halo', { radius: 2, tessellation: 48 }, scene)
+  const haloMat = new StandardMaterial('factory_halo_mat', scene)
+  haloMat.emissiveColor   = new Color3(0.8, 0.1, 0.1)
+  haloMat.disableLighting = true
+  haloMat.alpha           = 0.25
+
+  const halo = MeshBuilder.CreateDisc('factory_halo', { radius: 1.5, tessellation: 48 }, scene)
   halo.rotation.x = Math.PI / 2
   halo.position.set(FACTORY_POS.x, FACTORY_POS.y + 0.02, FACTORY_POS.z)
   halo.isPickable = false
-  const haloMat = new StandardMaterial('factory_halo_mat', scene)
-  haloMat.emissiveColor   = new Color3(0.6, 0.08, 0.08)
-  haloMat.disableLighting = true
-  haloMat.alpha           = 0.25
-  halo.material = haloMat
+  halo.material   = haloMat
 
-  // Pulsation porte + halo
   let t = 0
   const pulseObs = scene.onBeforeRenderObservable.add(() => {
     const dt = scene.getEngine().getDeltaTime() / 1000
     t += dt
     const pulse = 0.5 + Math.abs(Math.sin(t * 1.5)) * 0.5
-    frameMat.emissiveColor.set(0.5 * pulse, 0.05 * pulse, 0.05 * pulse)
-    haloMat.alpha = 0.12 + Math.abs(Math.sin(t * 1.2)) * 0.18
+    mat.emissiveColor.set(0.6 * pulse, 0.04 * pulse, 0.04 * pulse)
+    mat.alpha    = 0.22 + Math.abs(Math.sin(t * 1.2)) * 0.18
+    haloMat.alpha = 0.15 + Math.abs(Math.sin(t * 1.2)) * 0.2
   })
 
   return {
     pulseObs,
     dispose() {
       scene.onBeforeRenderObservable.remove(pulseObs)
-      door.dispose(); frame.dispose(); panel.dispose(); halo.dispose()
+      tube.dispose(); mat.dispose()
+      halo.dispose(); haloMat.dispose()
     },
   }
 }

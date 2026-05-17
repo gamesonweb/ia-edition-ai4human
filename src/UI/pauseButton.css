@@ -94,6 +94,17 @@
   border-color: #fff;
 }
 
+.pause-action.quit {
+  border-color: rgba(220, 80, 80, 0.5);
+  color: rgba(220, 120, 120, 0.9);
+}
+
+.pause-action.quit:hover {
+  background: rgba(220, 60, 60, 0.15);
+  border-color: rgba(240, 100, 100, 0.9);
+  color: #f08080;
+}
+
 /* ── Panel réglages ──────────────────────────────────────────────────────── */
 .pause-settings {
   display: none;

@@ -42,6 +42,11 @@ import { loadLevel8, LEVEL8_INTRO } from './levels/level8/index.js'
 import { loadLevel9, LEVEL9_INTRO } from './levels/level9/index.js'
 import { setupPolice }              from './levels/level1/police.js'
 import { showLevelIntro }         from './UI/levelIntro.js'
+import { showIntroVideo }         from './UI/introVideo.js'
+import { loadTutorial }           from './levels/tutorial/index.js'
+import { playCutscene }           from './UI/cutscene.js'
+import { showEndScreen }          from './UI/endScreen.js'
+import { showOutroVideo }         from './UI/outroVideo.js'
 import { attachChunkLoop }        from './scene/chunkManager.js'
 import { spawnPNJFleet, attachPNJLoop } from './pnj/pnjManager.js'
 
@@ -73,12 +78,14 @@ window.addEventListener('resize', () => engine.resize())
  * Throw en cas d'erreur pour que le menu propose un "Réessayer".
  */
 async function startGame({ name = 'Player', character = 'George' } = {}) {
+  sessionStorage.clear()
   scene.metadata = scene.metadata ?? {}
   scene.metadata.playerName      = name
   scene.metadata.playerCharacter = character
 
-  let heroRef       = null
-  let level1Handle  = null
+  let heroRef               = null
+  let tutorialHandle        = null
+  let level1Handle          = null
   let level2Handle  = null
   let level3Handle  = null
   let level4Handle  = null
@@ -97,11 +104,11 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   // 3. UI HUD
   const compass         = setupCompass()
   const positionDisplay = setupPositionDisplay()
-  const miniMap         = setupMiniMap()
-  const statsBar        = setupStatsBar()
+  const miniMap         = setupMiniMap({ scene })
+  const statsBar        = setupStatsBar({ playerName: name })
   const inventory       = setupInventoryBar(scene)
   const keybindings     = setupKeybindings()
-  const pauseButton     = setupPauseButton(scene, { engine, camera })
+  const pauseButton     = setupPauseButton(scene, { engine, camera, onQuit: () => location.reload() })
   const graphics        = setupGraphicsSettings(engine)
   const playerStats     = setupPlayerStats()
   const teleport        = setupTeleport({ getHero: () => heroRef })
@@ -116,6 +123,11 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
 
   let restartCurrentLevel = null
 
+  const playLevelCutscene = (shots, chapter) => {
+    scene.metadata.activeCutscene?.skip()
+    scene.metadata.activeCutscene = playCutscene(scene, shots, { chapter })
+  }
+
   const respawn = async () => {
     if (heroRef) heroRef.position.set(SPAWN.x, SPAWN.y, SPAWN.z)
     playerStats.setAlert(false)
@@ -123,6 +135,8 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     playerStats.setShield(100)
     scene.metadata.dead   = false
     scene.metadata.paused = false
+    // Rejouer la cutscene du niveau en cours après une mort
+    sessionStorage.removeItem(`cs_done_${scene.metadata.currentLevel}`)
     await restartCurrentLevel?.()
   }
 
@@ -146,22 +160,85 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   // chaque onComplete puisse référencer le suivant, et pour permettre
   // le restart de la manche en cours lors d'un respawn.
 
+  const LEVEL9_INTRO_SHOTS = [
+    // Plan 1 — zone joueur / contexte
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Les coordonnées ont été décryptées. L\'usine centrale IA est localisée.',
+      hold: 2800, move: 1800,
+    },
+    // Plan 2 — usine centrale (-46.57, 15.64) — saut lointain au sud-ouest
+    {
+      pos: [-36, 4.5, 16], tar: [-47, 1, 16],
+      cut: true, teleport: true,
+      orbit: { deg: 90 },
+      subtitle: 'Approchez-vous et entrez la combinaison de sécurité. C\'est la fin.',
+      hold: 3500, move: 1600,
+    },
+    // Plan 3 — retour joueur
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Appuyez sur E pour accéder au panneau. Une dernière mission.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel9 = async () => {
+    playerStats.setInvincible(true)
     level9Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel9
     level9Handle = await loadLevel9(scene, {
       getHero: () => heroRef,
       notifications,
-      onComplete: () => notifications?.show({
-        icon: 'fa-circle-check', variant: 'success',
-        title: 'Jeu terminé', message: 'Vous avez complété toutes les manches !', duration: 8000,
-      }),
+      onComplete: () => {
+        statsBar.stopTimer()
+        const finalTime = statsBar.getTime()
+        showOutroVideo('/videoOutro/videoOutro.mp4', () => {
+          showEndScreen({ playerTimeMs: finalTime, scene })
+        })
+      },
     })
-    showLevelIntro(LEVEL9_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_9')) {
+      sessionStorage.setItem('cs_done_9', '1')
+      playLevelCutscene(LEVEL9_INTRO_SHOTS, 'Manche 9 — Entrée de la centrale')
+    }
   }
 
+  const LEVEL8_INTRO_SHOTS = [
+    // Plan 1 — plan large : vue d'ensemble des 3 robots (saut lointain au sud)
+    {
+      pos: [10, 10, -180], tar: [10, 5, 50],
+      cut: true, teleport: true,
+      subtitle: 'Trois robots patrouillent le secteur. L\'un travaille au Data Center IA — identifiez-le.',
+      hold: 3000, move: 1800,
+    },
+    // Plan 2 — XR-221 (-41.63, 44.37) — orbit
+    {
+      pos: [-52, 14.5, 44], tar: [-42, 1, 44],
+      orbit: { deg: 90 },
+      subtitle: 'Scannez chaque robot avec [K]. Un seul a accès au Data Center.',
+      hold: 3200, move: 1600,
+    },
+    // Plan 3 — XR-442 / agent (47.57, 137.07) — cut+teleport+orbit
+    {
+      pos: [57, 14.5, 137], tar: [48, 1, 137],
+      cut: true, teleport: true,
+      orbit: { deg: 90 },
+      subtitle: 'Une fois identifié, synchronisez vos fréquences avec [E].',
+      hold: 3500, move: 1600,
+    },
+    // Plan 4 — retour joueur
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Trois suspects. Un seul est votre porte d\'entrée.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel8 = async () => {
+    playerStats.setInvincible(true)
     level8Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel8
@@ -170,10 +247,38 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       notifications,
       onComplete: startLevel9,
     })
-    showLevelIntro(LEVEL8_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_8')) {
+      sessionStorage.setItem('cs_done_8', '1')
+      playLevelCutscene(LEVEL8_INTRO_SHOTS, 'Manche 8 — Connexion IA')
+    }
   }
 
+  const LEVEL7_INTRO_SHOTS = [
+    // Plan 1 — zone joueur / contexte
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Jacob Martin est quelque part dans la zone. Trouvez-le — il détient l\'accréditation Sergent IA.',
+      hold: 2800, move: 1800,
+    },
+    // Plan 2 — Jacob (47.73, 24.97) — saut lointain au sud
+    {
+      pos: [62, 4.5, 25], tar: [48, 1, 25],
+      cut: true, teleport: true,
+      orbit: { deg: 90 },
+      subtitle: 'Jacob Martin — parlez-lui et résolvez le puzzle d\'accréditation.',
+      hold: 3500, move: 1600,
+    },
+    // Plan 3 — retour joueur
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Appuyez sur E pour interagir. Une seule chance.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel7 = async () => {
+    playerStats.setInvincible(true)
     level7Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel7
@@ -183,10 +288,45 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       inventory,
       onComplete: startLevel8,
     })
-    showLevelIntro(LEVEL7_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_7')) {
+      sessionStorage.setItem('cs_done_7', '1')
+      playLevelCutscene(LEVEL7_INTRO_SHOTS, 'Manche 7 — Découverte de Jacob')
+    }
   }
 
+  const LEVEL6_INTRO_SHOTS = [
+    // Plan 1 — plan large aérien avec sweep orbital pour voir toutes les zones
+    {
+      pos: [-14, 220, -100], tar: [-14, 5, 110],
+      orbit: { deg: 150 },
+      subtitle: 'Dix unités ennemies. Trois zones. La ville appartient aux machines.',
+      hold: 5000, move: 1800,
+    },
+    // Plan 2 — Zone 1 (15.27, 185.44) — détail au sol
+    {
+      pos: [6, 5, 185], tar: [15, 1, 185],
+      orbit: { deg: 90 },
+      subtitle: 'Zone 1 — cœur de la ville...',
+      hold: 3200, move: 1600,
+    },
+    // Plan 3 — Zone 3 (-191.64, 132.37) — extrême ouest, saut lointain
+    {
+      pos: [-182, 5, 132], tar: [-192, 1, 132],
+      cut: true, teleport: true,
+      subtitle: "...jusqu'à l'extrême ouest de Rey Michell. Chaque zone libérée révèle une clé.",
+      hold: 3000, move: 1600,
+    },
+    // Plan 4 — retour joueur
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: "Trois clés. Ensuite, l'ordinateur central. Bonne chance.",
+      hold: 2500,
+    },
+  ]
+
   const startLevel6 = async () => {
+    playerStats.setInvincible(true)
     level6Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel6
@@ -197,10 +337,44 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       inventory,
       onComplete: startLevel7,
     })
-    showLevelIntro(LEVEL6_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_6')) {
+      sessionStorage.setItem('cs_done_6', '1')
+      playLevelCutscene(LEVEL6_INTRO_SHOTS, 'Manche 6 — Attaque du robot policier')
+    }
   }
 
+  const LEVEL5_INTRO_SHOTS = [
+    // Plan 1 — zone joueur / contexte
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: '6 caméras de surveillance actives dans la zone. Neutralisez-les toutes.',
+      hold: 2800, move: 1800,
+    },
+    // Plan 2 — caméra nord-est (95.89, 12, 271.99) — orbit
+    {
+      pos: [86, 5, 272], tar: [96, 12, 272],
+      orbit: { deg: 90 },
+      subtitle: 'Elles sont disséminées du nord...',
+      hold: 3200, move: 1600,
+    },
+    // Plan 3 — caméra sud-ouest (-93.16, 12, 23.81) — saut lointain
+    {
+      pos: [-84, 5, 24], tar: [-93, 12, 24],
+      cut: true, teleport: true,
+      subtitle: '...au sud de Rey Michell.. Cherchez. Visez. Détruisez.',
+      hold: 3000, move: 1600,
+    },
+    // Plan 4 — retour joueur
+    {
+      pos: [20, 5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Six cibles. Pas de quartier.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel5 = async () => {
+    playerStats.setInvincible(true)
     level5Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel5
@@ -209,10 +383,38 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       notifications,
       onComplete: startLevel6,
     })
-    showLevelIntro(LEVEL5_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_5')) {
+      sessionStorage.setItem('cs_done_5', '1')
+      playLevelCutscene(LEVEL5_INTRO_SHOTS, 'Manche 5 — Destruction des caméras')
+    }
   }
 
+  const LEVEL4_INTRO_SHOTS = [
+    // Plan 1 — zone joueur / contexte
+    {
+      pos: [20, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Votre couverture doit être parfaite — le système de reconnaissance faciale bloque l\'accès à l\'usine.',
+      hold: 3000, move: 1800,
+    },
+    // Plan 2 — ordinateur (-115.36, 14.11) — saut lointain à l'ouest
+    {
+      pos: [-125, 4.5, 14], tar: [-115, 1, 14],
+      cut: true, teleport: true,
+      orbit: { deg: 90 },
+      subtitle: 'Un terminal d\'administration dans la zone industrielle. Enregistrez-vous comme robot autorisé.',
+      hold: 3500, move: 1600,
+    },
+    // Plan 3 — retour joueur
+    {
+      pos: [20, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Approchez le terminal et appuyez sur E. Votre robot vous aidera.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel4 = async () => {
+    playerStats.setInvincible(true)
     level4Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel4
@@ -221,11 +423,47 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       notifications,
       robot: level2Handle?.robot,
       onComplete: startLevel5,
+      onTeleport: () => teleport.teleport(),
     })
-    showLevelIntro(LEVEL4_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_4')) {
+      sessionStorage.setItem('cs_done_4', '1')
+      playLevelCutscene(LEVEL4_INTRO_SHOTS, 'Manche 4 — Infiltration IA')
+    }
   }
 
+  const LEVEL3_INTRO_SHOTS = [
+    // Plan 1 — robot à réparer (24.72, 310.48)
+    {
+      pos: [15, 4.5, 310], tar: [25, 1, 310],
+      orbit: { deg: 90 },
+      subtitle: 'Votre robot a besoin de pièces pour être remis en état.',
+      hold: 3500, move: 1800,
+    },
+    // Plan 2 — carte mère (-22.79, 28.55) — saut lointain
+    {
+      pos: [-32, 4.5, 29], tar: [-23, 1, 29],
+      cut: true, teleport: true,
+      subtitle: 'Une carte mère abandonnée dans la zone sud...',
+      hold: 2800, move: 1800,
+    },
+    // Plan 3 — disque (148.86, 38.11) — autre saut lointain
+    {
+      pos: [159, 4.5, 38], tar: [149, 1, 38],
+      cut: true, teleport: true,
+      subtitle: '...et un disque de données dissimulé à l\'est.',
+      hold: 2800, move: 1600,
+    },
+    // Plan 4 — retour joueur
+    {
+      pos: [20, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Récupérez les deux composants et ramenez-les au robot.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel3 = async () => {
+    playerStats.setInvincible(true)
     level3Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel3
@@ -236,10 +474,46 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       robot: level2Handle?.robot,
       onComplete: startLevel4,
     })
-    showLevelIntro(LEVEL3_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_3')) {
+      sessionStorage.setItem('cs_done_3', '1')
+      playLevelCutscene(LEVEL3_INTRO_SHOTS, 'Manche 3 — Réparation du compagnon')
+    }
   }
 
+  const LEVEL2_INTRO_SHOTS = [
+    {
+      pos: [78, 4.5, 314], tar: [89, 1, 314],
+      subtitle: 'Poste de contrôle frontalier Rey Michell.',
+      hold: 2800, move: 1800,
+    },
+    {
+      pos: [78, 4.5, 305], tar: [88, 1, 298],
+      subtitle: "Présentez votre passeport au soldat d'autorité.",
+      hold: 2800, move: 1800,
+    },
+    {
+      pos: [-170, 4.5, 196], tar: [-161, 1, 196],
+      cut: true,
+      teleport: true,
+      orbit: { deg: 120 },
+      subtitle: 'Votre robot IA contaminé rôde dans la zone industrielle.',
+      hold: 3500, move: 1800,
+    },
+    {
+      pos: [15, 4.5, 310], tar: [25, 1, 310],
+      subtitle: 'Récupérez-le et déposez-le dans la zone verte.',
+      hold: 2800, move: 1600,
+    },
+    {
+      pos: [29, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Une minute pour montrer vos papiers. Ne tardez pas.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel2 = async () => {
+    playerStats.setInvincible(true)
     level2Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel2
@@ -250,31 +524,69 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       inventory,
       onComplete: startLevel3,
     })
-    showLevelIntro(LEVEL2_INTRO)
+    playerStats.setInvincible(false)
+    if (!sessionStorage.getItem('cs_done_2')) {
+      sessionStorage.setItem('cs_done_2', '1')
+      playLevelCutscene(LEVEL2_INTRO_SHOTS, 'Manche 2 — Combat du compagnon infecté')
+    }
   }
 
+  const LEVEL1_INTRO_SHOTS = [
+    // Plan 1 — carte 1 (24.02, 354.81)
+    {
+      pos: [14, 4.5, 355], tar: [24, 0.8, 354],
+      subtitle: 'Poste de contrôle frontalier Rey Michell.· Zone de sécurité 7',
+      hold: 2800, move: 1800,
+    },
+    // Plan 2 — carte 2 (-24.17, 311.15)
+    {
+      pos: [-34, 4.5, 311], tar: [-24, 0.8, 311],
+      subtitle: "Vos documents d'identité sont éparpillés dans la zone.",
+      hold: 2800, move: 1800,
+    },
+    // Plan 3 — carte 3 (51.76, 307.46)
+    {
+      pos: [43, 4.5, 315], tar: [51, 0.8, 307],
+      subtitle: 'Trois cartes à récupérer.',
+      hold: 2800, move: 1800,
+    },
+    // Plan 4 — soldat / barrière (danger)
+    {
+      pos: [75, 4.5, 312], tar: [89, 1.8, 310],
+      subtitle: "Les unités IA patrouillent le secteur. Restez discret.",
+      hold: 2800, move: 1600,
+    },
+    // Plan 5 — retour joueur
+    {
+      pos: [29, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Récupérez-les. Vite.',
+      hold: 2500,
+    },
+  ]
+
   const startLevel1 = async () => {
+    playerStats.setInvincible(true)
     level1Handle?.dispose?.()
     inventory.clear()
     restartCurrentLevel = startLevel1
     level1Handle = await loadLevel1(scene, {
-      getHero: () => heroRef,
+      getHero:     () => heroRef,
       notifications,
       inventory,
-      onComplete: startLevel2,
+      onComplete:  startLevel2,
+      onCardReady: () => teleport.teleport(),
     })
-    showLevelIntro(LEVEL1_INTRO)
+    playerStats.setInvincible(false)
+
+    if (!sessionStorage.getItem('cs_done_1')) {
+      sessionStorage.setItem('cs_done_1', '1')
+      playLevelCutscene(LEVEL1_INTRO_SHOTS, 'Manche 1 — Faux laissez-passer')
+    }
   }
 
-  const [, player, level1] = await Promise.all([
+  const [, player] = await Promise.all([
     loadMapParts(scene),
     createPlayer(scene, { character }),
-    loadLevel1(scene, {
-      getHero: () => heroRef,
-      notifications,
-      inventory,
-      onComplete: startLevel2,
-    }),
     setupPolice(scene, {
       getHero:  () => heroRef,
       damage:   (amount) => playerStats.damage(amount),
@@ -314,11 +626,21 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
 
   console.log('[app] joueur prêt')
 
-  // Musique de jeu en boucle
+  // Musique de jeu en boucle — démarre silencieuse pendant la vidéo d'intro
   const bgm = new Audio('/music/music_game.mp3')
-  bgm.loop = true
+  bgm.loop   = true
+  bgm.volume = 0
   pauseButton.setAudio(bgm)
   bgm.play().catch(() => {})
+
+  const bgmFadeIn = (targetVol = 0.45, durationMs = 2500) => {
+    const step = 50
+    const inc  = targetVol / (durationMs / step)
+    const id   = setInterval(() => {
+      bgm.volume = Math.min(targetVol, bgm.volume + inc)
+      if (bgm.volume >= targetVol) clearInterval(id)
+    }, step)
+  }
 
   // Pré-chauffe le cache HTTP des assets des niveaux suivants
   // pour éviter le freeze au moment de la transition inter-manches.
@@ -330,9 +652,8 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   // Assets level 3 : composants à récupérer
   setTimeout(() => prefetch('/level/level2/mother_board.glb', '/level/level2/disk.glb'), 8000)
 
-  heroRef               = player.hero
-  level1Handle          = level1
-  restartCurrentLevel   = startLevel1
+  heroRef             = player.hero
+  restartCurrentLevel = startLevel1
   setupControls(scene, player.hero, player.animations, camera, canvas)
   attachChunkLoop(scene, () => heroRef?.position ?? null)
   attachPNJLoop(scene,   () => heroRef?.position ?? null)
@@ -351,7 +672,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       presses.push(now)
       if (presses.length < 3) return
       presses = []
-      const handles = { 1: level1Handle, 2: level2Handle, 3: level3Handle, 4: level4Handle, 5: level5Handle, 6: level6Handle, 7: level7Handle, 8: level8Handle, 9: level9Handle }
+      const handles = { 0: tutorialHandle, 1: level1Handle, 2: level2Handle, 3: level3Handle, 4: level4Handle, 5: level5Handle, 6: level6Handle, 7: level7Handle, 8: level8Handle, 9: level9Handle }
       handles[scene.metadata?.currentLevel]?.skip?.()
     })
   }
@@ -368,7 +689,16 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   })
 
   return () => {
-    if (scene.metadata?.currentLevel === 1) showLevelIntro(LEVEL1_INTRO)
+    showIntroVideo('/videoIntro/introVideo.mp4', () => {
+      bgmFadeIn()
+      loadTutorial(scene, {
+        getHero: () => heroRef,
+        notifications,
+        onComplete: () => startLevel1(),
+      }).then(handle => {
+        tutorialHandle = handle
+      })
+    })
   }
 }
 

@@ -2,6 +2,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder'
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
 import { Color3 } from '@babylonjs/core/Maths/math.color'
+import { UniversalCamera } from '@babylonjs/core/Cameras/universalCamera'
 import { GAME_CONFIG } from '../config/gameConfig.js'
 import '@babylonjs/inspector'
 
@@ -26,11 +27,111 @@ export function setupControls(scene, hero, animations, camera, canvas) {
   const camLimits  = GAME_CONFIG.CAMERA.LIMITS
   const heroCfg    = GAME_CONFIG.HERO
 
+  // --- Free camera state ---
+  let freeCamMode    = false
+  let freeCamera     = null
+  let savedHudStates = {}  // display inline sauvegardé avant masquage
+  let savedInvVisible = true
+
+  const HUD_SELECTORS = [
+    '#compass', '#crosshair', '#mini-map', '#map-expanded',
+    '#player-stats', '#damage-vignette', '#damage-hit-flash',
+    '#stats-bar', '#notifications', '#pause-btn', '#gfx-btn',
+    '#teleport-btn', '#key-hints', '#position-display', '#game-timer',
+  ]
+
+  const hideHUD = () => {
+    savedHudStates = {}
+    HUD_SELECTORS.forEach(sel => {
+      const el = document.querySelector(sel)
+      if (!el) return
+      savedHudStates[sel] = el.style.display
+      el.style.display = 'none'
+    })
+    const invTex = scene.textures.find(tx => tx.name === 'inv-ui')
+    if (invTex) {
+      savedInvVisible = invTex.rootContainer.isVisible
+      invTex.rootContainer.isVisible = false
+    }
+  }
+
+  const showHUD = () => {
+    HUD_SELECTORS.forEach(sel => {
+      const el = document.querySelector(sel)
+      if (!el) return
+      el.style.display = savedHudStates[sel] ?? ''
+    })
+    savedHudStates = {}
+    const invTex = scene.textures.find(tx => tx.name === 'inv-ui')
+    if (invTex) invTex.rootContainer.isVisible = savedInvVisible
+  }
+
+  const freeCamHUD = document.createElement('div')
+  freeCamHUD.id = 'free-cam-hud'
+  freeCamHUD.textContent = 'FREE CAMERA — H pour quitter | ZQSD/fleches : deplacer | Shift : vitesse | E/Ctrl : monter/descendre'
+  freeCamHUD.style.cssText = [
+    'display:none', 'position:fixed', 'top:20px', 'left:50%',
+    'transform:translateX(-50%)', 'background:rgba(0,0,0,.78)',
+    'color:#fff', 'padding:8px 20px', 'border-radius:8px',
+    'font:13px monospace', 'z-index:9999', 'pointer-events:none',
+    'letter-spacing:.4px', 'white-space:nowrap'
+  ].join(';')
+  document.body.appendChild(freeCamHUD)
+
+  const enterFreeCamera = () => {
+    if (freeCamMode) return
+    freeCamMode = true
+
+    freeCamera = new UniversalCamera('freeCam', camera.position.clone(), scene)
+    freeCamera.setTarget(camera.target.clone())
+    freeCamera.minZ = 0.1
+    freeCamera.maxZ = 2000
+    freeCamera.applyGravity    = false
+    freeCamera.checkCollisions = false
+
+    const isAzerty = layout === 'AZERTY'
+    freeCamera.keysUp    = isAzerty ? [90] : [87]  // Z ou W
+    freeCamera.keysDown  = [83]                     // S
+    freeCamera.keysLeft  = isAzerty ? [81] : [65]  // Q ou A
+    freeCamera.keysRight = [68]                     // D
+    // Fleches aussi
+    freeCamera.keysUp.push(38)
+    freeCamera.keysDown.push(40)
+    freeCamera.keysLeft.push(37)
+    freeCamera.keysRight.push(39)
+    // Montee (E) / descente (Ctrl) en world-space
+    if (freeCamera.keysUpward   !== undefined) freeCamera.keysUpward   = [69]
+    if (freeCamera.keysDownward !== undefined) freeCamera.keysDownward = [17]
+
+    freeCamera.speed = 1.5
+    freeCamera.angularSensibility = 800
+
+    if (document.pointerLockElement === canvas) document.exitPointerLock()
+    scene.activeCamera = freeCamera
+    freeCamera.attachControl(canvas, true)
+    hideHUD()
+    freeCamHUD.style.display = 'block'
+  }
+
+  const exitFreeCamera = () => {
+    if (!freeCamMode) return
+    freeCamMode = false
+
+    freeCamera.detachControl()
+    freeCamera.dispose()
+    freeCamera = null
+    scene.activeCamera = camera
+    if (document.pointerLockElement === canvas) document.exitPointerLock()
+    showHUD()
+    freeCamHUD.style.display = 'none'
+  }
+
   // --- Pointer lock : clic sur le canvas pour capturer la souris ---
   // Le navigateur impose un cooldown (~1.25s) après une sortie de pointer lock.
   // Si on reclique trop tôt, requestPointerLock() rejette avec SecurityError → on l'ignore.
   let pointerLockBusy = false
   canvas.addEventListener('click', () => {
+    if (freeCamMode) return
     if (document.pointerLockElement === canvas || pointerLockBusy) return
     pointerLockBusy = true
     const req = canvas.requestPointerLock()
@@ -48,6 +149,7 @@ export function setupControls(scene, hero, animations, camera, canvas) {
 
   // --- Rotation caméra via souris (pointer lock) ---
   document.addEventListener('mousemove', e => {
+    if (freeCamMode) return
     if (document.pointerLockElement !== canvas) return
     camera.alpha -= e.movementX * MOUSE_SENSITIVITY
     camera.beta  -= e.movementY * MOUSE_SENSITIVITY
@@ -65,6 +167,10 @@ export function setupControls(scene, hero, animations, camera, canvas) {
       } else {
         scene.debugLayer.show()
       }
+    }
+    if (e.key === 'h' || e.key === 'H') {
+      if (freeCamMode) exitFreeCamera()
+      else enterFreeCamera()
     }
   })
   window.addEventListener('keyup', e => {
@@ -171,13 +277,7 @@ export function setupControls(scene, hero, animations, camera, canvas) {
 
   canvas.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || document.pointerLockElement !== canvas) return
-    enterCombat()
     fireBullet()
-  })
-
-  canvas.addEventListener('mouseup', (e) => {
-    if (e.button !== 0) return
-    exitCombat()
   })
 
   // Mise à jour des balles et des flashs dans la boucle de rendu
@@ -313,6 +413,12 @@ export function setupControls(scene, hero, animations, camera, canvas) {
 
   // --- Boucle principale ---
   scene.onBeforeRenderObservable.add(() => {
+    // En mode free camera : ajuster la vitesse selon Shift puis laisser la FreeCamera agir
+    if (freeCamMode) {
+      if (freeCamera) freeCamera.speed = (inputMap['Shift'] || inputMap['shift']) ? 4.0 : 1.5
+      return
+    }
+
     // Mort : quitte le mode combat, joue death une fois, bloque les inputs
     if (scene.metadata?.dead) {
       if (combatMode) { combatMode = false }

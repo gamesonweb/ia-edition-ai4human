@@ -9,7 +9,7 @@ const STORAGE = {
   QUALITY:  'babylon-akira:quality',
 }
 
-export const setupPauseButton = (scene, { engine, camera } = {}) => {
+export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
   const savedVolume   = parseFloat(localStorage.getItem(STORAGE.VOLUME)  ?? '40')
   const savedKeyboard = localStorage.getItem(STORAGE.KEYBOARD) ?? 'AZERTY'
   const savedQuality  = localStorage.getItem(STORAGE.QUALITY)  ?? 'quality'
@@ -51,6 +51,9 @@ export const setupPauseButton = (scene, { engine, camera } = {}) => {
       <button class="pause-action settings-open" type="button">
         <i class="fa-solid fa-gear"></i><span>Réglages</span>
       </button>
+      <button class="pause-action quit" type="button">
+        <i class="fa-solid fa-door-open"></i><span>Quitter</span>
+      </button>
     </div>
 
     <div class="pause-settings">
@@ -88,6 +91,7 @@ export const setupPauseButton = (scene, { engine, camera } = {}) => {
 
   const iconEl        = btn.querySelector('.icon')
   const resumeBtn     = overlay.querySelector('.resume')
+  const quitBtn       = overlay.querySelector('.quit')
   const settingsOpenBtn = overlay.querySelector('.settings-open')
   const settingsBackBtn = overlay.querySelector('.settings-back')
   const mainPanel     = overlay.querySelector('.pause-main')
@@ -150,6 +154,11 @@ export const setupPauseButton = (scene, { engine, camera } = {}) => {
 
   btn.addEventListener('click', toggle)
   resumeBtn.addEventListener('click', () => setPaused(false))
+  quitBtn.addEventListener('click', () => {
+    if (window.confirm('Quitter la partie et retourner au menu principal ?')) {
+      onQuit ? onQuit() : location.reload()
+    }
+  })
 
   const onKey = (e) => {
     if (e.repeat) return

@@ -1,0 +1,246 @@
+#cutscene-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ---- Letterbox bars ---- */
+.cs-bar {
+  background: #000;
+  height: 0;
+  flex-shrink: 0;
+  transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#cutscene-overlay.cs-visible .cs-bar {
+  height: 11vh;
+}
+
+/* ---- Subtitle zone (entre les barres) ---- */
+.cs-mid {
+  flex: 1;
+  position: relative;
+  pointer-events: none;
+}
+
+/* ---- Vignette cinématique ---- */
+.cs-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    rgba(0, 0, 0, 0.45) 80%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+  pointer-events: none;
+}
+
+/* ---- Label chapitre (haut gauche, après bar) ---- */
+.cs-chapter {
+  position: absolute;
+  top: 18px;
+  left: 36px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(103, 232, 249, 0.8);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.4s ease 0.5s, transform 0.4s ease 0.5s;
+}
+
+#cutscene-overlay.cs-visible .cs-chapter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- Title card — plein écran noir avant le premier plan ---- */
+.cs-title-card {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cs-title-card.cs-title-visible {
+  opacity: 1;
+}
+
+/* Titre principal — caché par défaut, animé quand visible */
+.cs-title-main {
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  text-shadow:
+    0 0 80px rgba(103, 232, 249, 0.3),
+    0 4px 40px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.cs-title-card.cs-title-visible .cs-title-main {
+  animation: cs-el-rise 0.65s cubic-bezier(0.2, 0.8, 0.3, 1) 0.2s forwards;
+}
+
+/* Séparateur horizontal qui s'étend */
+.cs-title-separator {
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.65), transparent);
+  margin: 32px auto 28px;
+}
+
+.cs-title-card.cs-title-visible .cs-title-separator {
+  animation: cs-line-expand 0.7s ease 0.5s forwards;
+}
+
+/* Sous-titre */
+.cs-title-sub {
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  font-weight: 500;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgba(103, 232, 249, 0.85);
+  text-align: center;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.cs-title-card.cs-title-visible .cs-title-sub {
+  animation: cs-el-rise 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) 0.65s forwards;
+}
+
+@keyframes cs-el-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cs-line-expand {
+  from { width: 0; }
+  to   { width: min(320px, 55vw); }
+}
+
+/* ---- Subtitle (bas de zone, au-dessus de la barre) ---- */
+.cs-subtitle {
+  position: absolute;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(700px, 88vw);
+  text-align: center;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  line-height: 1.5;
+}
+
+.cs-subtitle.cs-sub-visible {
+  opacity: 1;
+}
+
+/* ---- Bottom bar contient le bouton Passer ---- */
+.cs-bar-bottom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 36px;
+}
+
+/* ---- Skip button — bas droite dans la barre noire ---- */
+.cs-skip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 7px 18px 7px 14px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.6s, background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+#cutscene-overlay.cs-visible .cs-skip {
+  opacity: 1;
+}
+
+.cs-skip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #fff;
+  transform: scale(1.04);
+}
+
+.cs-skip svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---- Teleport flash ---- */
+.cs-teleport-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 3502;
+  pointer-events: none;
+  animation: cs-teleport 0.75s ease-out forwards;
+}
+
+@keyframes cs-teleport {
+  0%   { background: rgba(103, 232, 249, 0);    filter: blur(0); }
+  6%   { background: rgba(255, 255, 255, 0.92); filter: blur(3px); }
+  18%  { background: rgba(103, 232, 249, 0.65); filter: blur(1px); }
+  35%  { background: rgba(103, 232, 249, 0.25); filter: blur(0); }
+  100% { background: rgba(103, 232, 249, 0);    filter: blur(0); }
+}
+
+/* ---- Fermeture ---- */
+#cutscene-overlay.cs-closing {
+  pointer-events: none;
+  transition: none;
+}
+
+#cutscene-overlay.cs-closing .cs-bar {
+  height: 0;
+  transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#cutscene-overlay.cs-closing .cs-chapter,
+#cutscene-overlay.cs-closing .cs-subtitle,
+#cutscene-overlay.cs-closing .cs-skip {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}

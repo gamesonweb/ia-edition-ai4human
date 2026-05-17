@@ -1,0 +1,131 @@
+#outro-video-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4500;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#outro-video-overlay.ov-visible {
+  opacity: 1;
+}
+
+#outro-video-overlay.ov-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#outro-video-el {
+  max-width: 80vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.ov-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+      transparent 40%,
+      rgba(0, 0, 0, 0.55) 75%,
+      rgba(0, 0, 0, 0.85) 100%);
+  z-index: 1;
+}
+
+.ov-logo {
+  position: absolute;
+  top: 28px;
+  left: 36px;
+  z-index: 2;
+  font-family: 'Rajdhani', 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px rgba(103, 232, 249, 0.55);
+  opacity: 0;
+  animation: ov-fadein 0.8s ease 0.4s forwards;
+}
+
+.ov-logo-accent {
+  color: #67e8f9;
+}
+
+.ov-label {
+  position: absolute;
+  bottom: 36px;
+  left: 36px;
+  z-index: 2;
+  font-family: 'Rajdhani', 'Orbitron', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  animation: ov-fadein 0.8s ease 0.6s forwards;
+}
+
+.ov-label-dots::after {
+  content: '';
+  animation: ov-dots 1.6s steps(3, end) infinite;
+}
+
+@keyframes ov-dots {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
+
+@keyframes ov-fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ov-skip {
+  position: absolute;
+  bottom: 36px;
+  right: 36px;
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+  opacity: 0.7;
+  padding: 0;
+}
+
+.ov-skip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 1);
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.ov-skip:active {
+  transform: scale(0.96);
+}
+
+.ov-skip svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
