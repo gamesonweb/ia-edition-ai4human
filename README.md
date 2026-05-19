@@ -1,8 +1,4 @@
-# BLACKOUT — Artificial Intelligence Edition
-
-> *L'IA a pris notre monde. Le virus a pris l'IA. Vous avez pris votre décision.*
-
----
+<img width="724" height="147" alt="logo_blackout" src="https://github.com/user-attachments/assets/c5129571-13c1-4c3c-ae92-5cca960b1fc8" />
 
 ## 👋 Bienvenue
 Nous sommes trois étudiants passionnés qui participons au concours **Games On Web 2026** avec notre jeu **BLACKOUT**.\
@@ -15,6 +11,9 @@ Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 > [!NOTE]
 > Testé sur un Mac Mini M4 2025 — Chrome recommandé pour des performances optimales (Moins conseillé d'utilisé Safari !)
 > Lien du site de notre jeu : [https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)
+
+<img width="800" height="415" alt="blackout" src="https://github.com/user-attachments/assets/0b48b7f1-c80d-465e-a64f-682fd0d6920e" />
+
 ---
 
 ## Lien du site pour Jouer à Blackout
@@ -32,6 +31,25 @@ Nous sommes trois étudiants réunis autour d'un objectif commun : concevoir **n
 
 Bien que chacun possède ses propres compétences, nous avons mis nos forces en commun afin de dépasser nos limites et mener à bien ce projet ambitieux 
 malgré le temps restreint dont nous disposions — après tout, nous sommes alternants !
+
+## 📹 Ressources & Tutoriels vidéo
+
+Voici l’ensemble de nos vidéos :
+
+- [Introduction](https://youtu.be/4EoNDClSL2o)
+- [Level 1 - Faux laissez-passer](https://youtu.be/Eqwl_U9HI7c)
+- [Level 2 - Combat du compagnon infecté](https://youtu.be/qN44rlkKwMw)
+- [Level 3 - Réparation du compagnon](https://youtu.be/otSS0kGdaAc)
+- [Level 4 - Infiltration IA](https://youtu.be/nvgABgGhr8E)
+- [Level 5 - Destruction des caméras](https://youtu.be/LxaS-PA4w_Q)
+- [Level 6 - Attaque des robots policiers IA](https://youtu.be/dq0PfffLbvg)
+- [Level 7 - Découverte de Jacob](https://youtu.be/PlpQH9v7Z_E)
+- [Level 8 - Connexion IA](https://youtu.be/Pf-UrF0eR_E)
+- [Level 9 - Entrée de la centrale de données](https://youtu.be/7uYBQiFguak)
+- [Épilogue de fin](https://youtu.be/M3UJqIa7CRo)
+
+> [!NOTE]
+> Tous les niveaux sont enregistrés et publiés sur YouTube.
 
 ---
 
