@@ -1,4 +1,6 @@
-<img width="724" height="100" alt="logo_blackout" src="https://github.com/user-attachments/assets/c5129571-13c1-4c3c-ae92-5cca960b1fc8" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/c5129571-13c1-4c3c-ae92-5cca960b1fc8" width="400"/>
+</p>
 
 ## 👋 Bienvenue
 Nous sommes trois étudiants passionnés qui participons au concours **Games On Web 2026** avec notre jeu **BLACKOUT**.\
