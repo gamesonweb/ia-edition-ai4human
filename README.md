@@ -11,9 +11,10 @@ L'intégralité du code source est disponible sur ce dépôt GitHub.
 Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 
 > [!NOTE]
-> Testé sur un Mac Mini M4 2025 — Chrome recommandé pour des performances optimales (Moins conseillé d'utilisé Safari !)
-> Lien du site de notre jeu : [https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)
-
+> Testé sur un Mac Mini M4 2025 — Chrome recommandé pour des performances optimales (Moins conseillé d'utilisé Safari !)  
+> Lien du site de notre jeu : [https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)  
+> Lien du site de notre Behind The Scene (BTS) de Blackout : [https://js-blackout-behind-the-scene-gow.vercel.app](https://js-blackout-behind-the-scene-gow.vercel.app)
+ 
 <img width="800" height="415" alt="blackout" src="https://github.com/user-attachments/assets/0b48b7f1-c80d-465e-a64f-682fd0d6920e" />
 
 ---
@@ -22,6 +23,9 @@ Le jeu est hébergé sur **Vercel** et est **accessible en ligne**.
 
 Plongez dans l’univers de Blackout et tentez de survivre dans un monde envahi par des IA hostiles.
 [https://blackout-gow-ai4human.vercel.app](https://blackout-gow-ai4human.vercel.app)
+
+Découvrer comment nous avons réaliser ce jeu 
+[https://js-blackout-behind-the-scene-gow.vercel.app](https://js-blackout-behind-the-scene-gow.vercel.app)
 
 ## À propos de nous
 
