@@ -19,7 +19,7 @@ export const LEVEL9_INTRO = {
   subtitle: 'Accédez à l\'usine centrale IA',
   dangers: [
     { icon: 'fa-location-dot', text: 'Rendez-vous aux coordonnées décryptées' },
-    { icon: 'fa-lock',         text: 'Entrez la combinaison de sécurité directionnelle' },
+    { icon: 'fa-bolt',         text: 'Surchargez le panneau de sécurité en cliquant rapidement' },
   ],
   duration: 7000,
 }
@@ -144,7 +144,7 @@ export async function loadLevel9(scene, { getHero, notifications, onComplete } =
     id:         'objective',
     icon:       'fa-location-dot',
     title:      'Objectif',
-    message:    'Rendez-vous à l\'usine centrale IA (coordonnées décryptées) et entrez la combinaison de sécurité.',
+    message:    'Rendez-vous à l\'usine centrale IA (coordonnées décryptées) et surchargez le panneau de sécurité.',
     persistent: true,
   })
 

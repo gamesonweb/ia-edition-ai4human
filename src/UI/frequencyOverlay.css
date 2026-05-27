@@ -330,3 +330,54 @@
   border-radius: 3px; padding: 1px 5px;
   font-family: inherit; font-size: 9px; margin: 0 4px;
 }
+
+/* ===== Responsive ===== */
+@media (max-width: 860px) {
+  .fq-body {
+    grid-template-columns: 140px 1fr 140px;
+    padding: 10px;
+    gap: 10px;
+  }
+  .fq-robot-icon { font-size: 48px; }
+  .fq-robot-panel { padding: 10px; gap: 8px; }
+  .fq-robot-label { font-size: 9px; }
+  .fq-robot-sub { display: none; }
+  .fq-console { padding: 10px; gap: 10px; }
+}
+
+@media (max-width: 640px) {
+  .fq-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    padding: 10px;
+    gap: 10px;
+  }
+  /* Panneaux robots côte-à-côte */
+  .fq-robot-panel {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 14px;
+  }
+  .fq-robot-icon { font-size: 40px; }
+  .fq-robot-waves { display: none; }
+  .fq-signal-viz { height: 55px; }
+  .fq-sliders { gap: 10px; }
+  .fq-slider-label { font-size: 9px; letter-spacing: 1px; }
+  .fq-coords-value { font-size: 17px; }
+}
+
+@media (max-width: 480px) {
+  .fq-header { padding: 8px 12px; }
+  .fq-h-title { font-size: 11px; letter-spacing: 2px; }
+  .fq-h-sub { font-size: 9px; }
+  .fq-body { padding: 8px; gap: 8px; }
+  .fq-console { padding: 8px; gap: 8px; }
+  .fq-robot-panel { padding: 8px 10px; }
+  .fq-robot-icon { font-size: 32px; }
+  .fq-dial-line { font-size: 10px; }
+  .fq-coords { padding: 10px 14px; }
+  .fq-coords-value { font-size: 15px; }
+  .fq-footer { padding: 6px 10px; font-size: 8px; }
+}

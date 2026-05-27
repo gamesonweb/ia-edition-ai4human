@@ -1,0 +1,703 @@
+/* Styles pour l'interface utilisateur de la simulation Tron */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+.tron-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+  color: #00f0ff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Vignette / Vignettage de grille */
+.tron-hud::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 40%, rgba(2, 4, 18, 0.75) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Coins de l'interface en surbrillance */
+.tron-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(0, 240, 255, 0.4);
+  z-index: 5;
+}
+.tron-corner.tl { top: 30px; left: 30px; border-right: none; border-bottom: none; }
+.tron-corner.tr { top: 30px; right: 30px; border-left: none; border-bottom: none; }
+.tron-corner.bl { bottom: 30px; left: 30px; border-right: none; border-top: none; }
+.tron-corner.br { bottom: 30px; right: 30px; border-left: none; border-top: none; }
+
+/* En-tête */
+.tron-header {
+  position: absolute;
+  top: 40px;
+  left: 60px;
+  right: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5;
+  border-bottom: 1px dashed rgba(0, 240, 255, 0.25);
+  padding-bottom: 10px;
+  pointer-events: auto;
+}
+.tron-title {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+.tron-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.tron-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+  animation: tron-blink 1.5s infinite alternate;
+}
+
+/* Informations Système Gauche */
+.tron-sys-info {
+  position: absolute;
+  left: 60px;
+  top: 110px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(0, 240, 255, 0.7);
+  background: rgba(4, 8, 24, 0.65);
+  padding: 15px;
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+}
+.tron-sys-info span {
+  display: block;
+}
+
+/* Instructions de contrôles en bas à gauche */
+.tron-controls {
+  position: absolute;
+  left: 60px;
+  bottom: 50px;
+  z-index: 5;
+  background: rgba(4, 8, 24, 0.75);
+  border-left: 3px solid #ff5500;
+  padding: 12px 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #fff;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.tron-controls-title {
+  color: #ff5500;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 6px;
+  letter-spacing: 1.5px;
+}
+.tron-key {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+/* Bouton Quitter en haut à droite */
+.tron-quit-btn {
+  background: rgba(255, 85, 0, 0.15);
+  border: 1px solid rgba(255, 85, 0, 0.5);
+  color: #ff5500;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+.tron-quit-btn:hover {
+  background: #ff5500;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255, 85, 0, 0.7);
+  transform: translateY(-1px);
+}
+.tron-quit-btn:active {
+  transform: translateY(0);
+}
+
+/* ─── Compteur de vitesse analogique ──────────────────────────────────────── */
+.tron-speedo {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  z-index: 5;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.18));
+}
+.tron-gauge {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#tron-gauge-needle {
+  transition: transform 0.12s ease-out;
+}
+.tron-speedo-val {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 1;
+  color: #00f0ff;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.9), 0 0 22px rgba(0, 240, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+.tron-speedo-unit {
+  position: absolute;
+  left: 50%;
+  top: 75%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0, 240, 255, 0.55);
+}
+
+@keyframes tron-blink {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
+/* ─── Panneau course (tour / temps / meilleur) ─────────────────────────── */
+.tron-race {
+  position: absolute;
+  top: 110px;
+  left: 60px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 18px;
+  background: rgba(4, 8, 24, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-left: 3px solid #00f0ff;
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+  min-width: 220px;
+  pointer-events: none;
+}
+.tron-race-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  font-size: 13px;
+}
+.tron-race-label {
+  color: rgba(0, 240, 255, 0.55);
+  letter-spacing: 2px;
+}
+.tron-race-val {
+  color: #00f0ff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+  letter-spacing: 1px;
+}
+
+/* ─── Compte à rebours plein écran ─────────────────────────────────────── */
+.tron-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 220px;
+  font-weight: bold;
+  color: #00f0ff;
+  text-shadow: 0 0 30px #00f0ff, 0 0 80px rgba(0, 240, 255, 0.5);
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  letter-spacing: 4px;
+}
+.tron-countdown.show {
+  animation: tron-cd-pop 1s ease-out forwards;
+}
+.tron-countdown.go {
+  color: #ff8800;
+  text-shadow: 0 0 40px #ff8800, 0 0 100px rgba(255, 136, 0, 0.6);
+  font-size: 180px;
+  letter-spacing: 12px;
+}
+@keyframes tron-cd-pop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 1; transform: scale(1.1); }
+  60%  { opacity: 1; transform: scale(1.0); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* ─── Écran de fin de course ───────────────────────────────────────────── */
+.tron-finish {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 7;
+  background: rgba(2, 4, 18, 0.78);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.tron-finish.show {
+  opacity: 1;
+}
+.tron-finish-title {
+  font-size: 56px;
+  letter-spacing: 10px;
+  color: #00f0ff;
+  text-shadow: 0 0 22px #00f0ff, 0 0 60px rgba(0, 240, 255, 0.4);
+}
+.tron-finish-victory {
+  color: #00ff88;
+  text-shadow: 0 0 28px #00ff88, 0 0 70px rgba(0, 255, 136, 0.5);
+  animation: tron-finish-glow 1s ease-in-out infinite alternate;
+}
+.tron-finish-defeat {
+  color: #ff2222;
+  text-shadow: 0 0 28px #ff2222, 0 0 70px rgba(255, 34, 34, 0.5);
+}
+@keyframes tron-finish-glow {
+  from { text-shadow: 0 0 22px #00ff88, 0 0 50px rgba(0, 255, 136, 0.4); }
+  to   { text-shadow: 0 0 40px #00ff88, 0 0 90px rgba(0, 255, 136, 0.7), 0 0 130px rgba(0, 255, 136, 0.3); }
+}
+.tron-finish-row {
+  display: flex;
+  gap: 24px;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: rgba(0, 240, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+.tron-finish-row span:last-child {
+  color: #00f0ff;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+.tron-finish-btn {
+  margin-top: 32px;
+  padding: 14px 48px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1.5px solid rgba(0, 240, 255, 0.6);
+  color: #00f0ff;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  border-radius: 4px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+.tron-finish-btn:hover {
+  background: rgba(0, 240, 255, 0.18);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.5);
+  transform: translateY(-2px);
+}
+.tron-finish-btn:active {
+  transform: translateY(0);
+}
+
+/* Flèche directionnelle checkpoint */
+.tron-nav {
+  position: absolute;
+  bottom: 210px;
+  right: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+.tron-nav-arrow {
+  width: 52px;
+  height: 52px;
+  transition: transform 0.15s linear;
+  filter: drop-shadow(0 0 8px #ff00cc);
+}
+.tron-nav-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #ff00cc;
+  text-shadow: 0 0 6px #ff00cc;
+}
+
+/* Classement pilotes */
+.tron-standings {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+.tron-standings-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0, 240, 255, 0.5);
+  margin-bottom: 6px;
+}
+.tron-standings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tron-srow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: rgba(0, 240, 255, 0.55);
+}
+.tron-srow-you {
+  color: #ff00cc;
+  text-shadow: 0 0 8px #ff00cc;
+}
+.tron-spos {
+  width: 14px;
+  text-align: right;
+  opacity: 0.7;
+}
+.tron-sname {
+  flex: 1;
+}
+.tron-sdone {
+  color: #00ff88;
+  font-size: 10px;
+}
+
+/* Indicateur REC */
+.tron-rec {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #ff2222;
+  font-size: 13px;
+  letter-spacing: 3px;
+  font-weight: bold;
+  text-shadow: 0 0 8px #ff2222;
+  animation: tron-rec-blink 0.9s step-start infinite;
+}
+@keyframes tron-rec-blink {
+  50% { opacity: 0.2; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUTSCENE de départ
+   ═══════════════════════════════════════════════════════════════ */
+
+#tron-cutscene {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  pointer-events: none;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Barres letterbox haut / bas */
+.tc-bar {
+  position: absolute;
+  left: 0; right: 0;
+  background: #000;
+  transition: height 0.7s cubic-bezier(0.7, 0, 0.3, 1);
+  z-index: 2;
+}
+.tc-bar-top { top: 0;    height: 18vh; }
+.tc-bar-bot { bottom: 0; height: 18vh; }
+#tron-cutscene.tc-open .tc-bar-top { height: 18vh; }
+#tron-cutscene.tc-open .tc-bar-bot { height: 18vh; }
+#tron-cutscene.tc-exit .tc-bar-top { height: 0; }
+#tron-cutscene.tc-exit .tc-bar-bot { height: 0; }
+
+/* Ligne de scan animée */
+.tc-scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: rgba(255, 30, 30, 0.6);
+  box-shadow: 0 0 12px rgba(255, 30, 30, 0.7);
+  z-index: 3;
+  top: 18vh;
+  animation: tc-scan 0.6s ease-out forwards;
+}
+@keyframes tc-scan {
+  from { top: 18vh; opacity: 1; }
+  to   { top: 82vh; opacity: 0.3; }
+}
+
+/* Zone de contenu central */
+.tc-content {
+  position: absolute;
+  inset: 18vh 0 18vh 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 1;
+}
+
+/* Fond semi-transparent avec grille */
+.tc-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0,247,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,247,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.6;
+}
+
+.tc-location {
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: rgba(255, 30, 30, 0.6);
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: tc-fadein 0.5s 0.3s ease forwards;
+}
+.tc-title {
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 700;
+  letter-spacing: 10px;
+  color: #ff1a1a;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 30px #ff1a1a,
+    0 0 60px rgba(255, 26, 26, 0.4);
+  opacity: 0;
+  animation: tc-glitch-in 0.6s 0.9s ease forwards;
+}
+.tc-laps {
+  font-size: 14px;
+  letter-spacing: 5px;
+  color: rgba(255, 60, 60, 0.7);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: tc-fadein 0.4s 1.5s ease forwards;
+}
+.tc-divider {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ff1a1a, transparent);
+  opacity: 0;
+  animation: tc-fadein 0.4s 1.8s ease forwards;
+  margin: 4px 0;
+}
+.tc-ready {
+  font-size: 18px;
+  letter-spacing: 8px;
+  color: #ff4444;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: tc-pulse-in 0.5s 2.4s ease forwards;
+  transition: opacity 0.3s ease;
+}
+.tc-ready.tc-ready-hide {
+  opacity: 0 !important;
+  animation: none;
+}
+
+/* Compte à rebours intégré */
+.tc-cd {
+  font-size: 120px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #ff1a1a;
+  text-shadow: 0 0 30px #ff1a1a, 0 0 80px rgba(255, 26, 26, 0.5);
+  opacity: 0;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.tc-cd.tc-cd-show {
+  animation: tc-cd-pop 1s ease-out forwards;
+}
+.tc-cd.tc-cd-go {
+  color: #ff0000;
+  text-shadow: 0 0 40px #ff0000, 0 0 100px rgba(255, 0, 0, 0.7);
+  font-size: 90px;
+  letter-spacing: 18px;
+}
+@keyframes tc-cd-pop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  15%  { opacity: 1; transform: scale(1.18); }
+  35%  { opacity: 1; transform: scale(1.0); }
+  100% { opacity: 1; transform: scale(1.0); }
+}
+
+@keyframes tc-fadein {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tc-glitch-in {
+  0%   { opacity: 0; transform: scaleX(1.08); filter: blur(4px); }
+  40%  { opacity: 1; transform: scaleX(0.98); filter: blur(0); }
+  60%  { transform: scaleX(1.01); }
+  80%  { transform: scaleX(0.995); }
+  100% { opacity: 1; transform: scaleX(1); filter: none; }
+}
+@keyframes tc-pulse-in {
+  0%   { opacity: 0; transform: scale(0.9); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Objectif de jeu dans la cutscene */
+.tc-objective {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  color: rgba(255, 180, 180, 0.75);
+  text-align: center;
+  max-width: 500px;
+  line-height: 1.8;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: tc-fadein 0.5s 2.0s ease forwards;
+  margin-top: 4px;
+}
+.tc-objective-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 6px;
+  color: rgba(255, 50, 50, 0.5);
+  margin-bottom: 6px;
+}
+.tc-ai-tip {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(0, 230, 255, 0.75);
+  text-shadow: 0 0 10px rgba(0, 230, 255, 0.4);
+}
+.tc-ai-tip kbd {
+  background: rgba(0, 230, 255, 0.15);
+  border: 1px solid rgba(0, 230, 255, 0.4);
+  border-radius: 3px;
+  padding: 0 5px;
+  font-family: inherit;
+  color: #fff;
+}
+
+/* Overlay de fade-out final */
+.tc-fade-overlay {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.6s ease;
+}
+.tc-fade-overlay.tc-fading { opacity: 1; }
+
+/* ── Badge IA-CHEAT ─────────────────────────────────────────── */
+#tron-ai-badge {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.3s, background 0.3s;
+}
+.tab-badge-icon { font-size: 14px; }
+
+/* Disponible */
+.tron-ai-badge-ready {
+  background: rgba(0, 8, 20, 0.85);
+  border: 1.5px solid rgba(0, 247, 255, 0.7);
+  color: #00f7ff;
+  font-size: 13px;
+  letter-spacing: 3px;
+  animation: tron-badge-ready 1.2s ease-in-out infinite;
+}
+.tron-ai-badge-ready kbd {
+  background: rgba(0, 247, 255, 0.18);
+  border: 1px solid rgba(0, 247, 255, 0.6);
+  border-radius: 3px;
+  padding: 1px 7px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 0 6px #00f7ff;
+}
+@keyframes tron-badge-ready {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(0, 247, 255, 0.35), 0 0 28px rgba(0, 247, 255, 0.15);
+    border-color: rgba(0, 247, 255, 0.6);
+    background: rgba(0, 8, 20, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(0, 247, 255, 0.85), 0 0 70px rgba(0, 247, 255, 0.4), inset 0 0 18px rgba(0, 247, 255, 0.15);
+    border-color: rgba(0, 247, 255, 1.0);
+    background: rgba(0, 247, 255, 0.1);
+  }
+}
+
+/* Cooldown */
+.tron-ai-badge-cooldown {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+}

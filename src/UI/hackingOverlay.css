@@ -859,3 +859,20 @@
   .hk-table-head,
   .hk-table-row   { grid-template-columns: 60px 1fr 80px; gap: 8px; font-size: 11px; }
 }
+
+/* ===== Responsive supplémentaire ===== */
+@media (max-width: 860px) and (min-width: 641px) {
+  .hk-body { padding: 18px 20px 16px; }
+  .hk-enroll-grid { grid-template-columns: minmax(200px, 260px) 1fr; gap: 16px; }
+  .hk-train-grid  { grid-template-columns: minmax(200px, 240px) 1fr; gap: 16px; }
+  .hk-drop-filled { grid-template-columns: minmax(160px, 200px) 1fr; gap: 14px; }
+  .hk-dropzone { min-height: 220px; }
+}
+
+@media (max-height: 700px) {
+  .hk-window { max-height: 96vh; }
+  .hk-body { padding: 14px 20px 12px; }
+  .hk-dropzone { min-height: 180px; }
+  .hk-log { max-height: 90px; }
+  .hk-form { gap: 12px; }
+}

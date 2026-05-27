@@ -323,3 +323,63 @@
   font-family: inherit; font-size: 10px;
   margin-right: 4px;
 }
+
+/* ===== Responsive ===== */
+@media (max-width: 960px) {
+  .ar-content {
+    grid-template-columns: 200px 1fr 200px;
+    gap: 10px;
+    padding: 10px;
+  }
+  .ar-portrait { width: 130px; height: 130px; }
+  .ar-portrait-icon { font-size: 58px; }
+  .ar-scan-box { width: 180px; height: 230px; }
+  .ar-target-icon { font-size: 74px; }
+  .ar-progress-track { width: 200px; }
+}
+
+@media (max-width: 780px) {
+  .ar-content {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    overflow-y: auto;
+    padding: 10px;
+    gap: 10px;
+  }
+  /* Panneaux latéraux en ligne sur mobile */
+  .ar-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ar-panel-title { width: 100%; }
+  .ar-portrait { width: 100px; height: 100px; margin: 0; }
+  .ar-portrait-icon { font-size: 44px; }
+  .ar-unit-fields,
+  .ar-db-fields { flex: 1; min-width: 180px; }
+  /* Centre : disposition horizontale compacte */
+  .ar-center { flex-direction: row; justify-content: space-evenly; flex-wrap: wrap; gap: 12px; }
+  .ar-scan-box { width: 160px; height: 200px; }
+  .ar-target-icon { font-size: 64px; }
+  .ar-progress-track { width: 100%; max-width: 240px; }
+  .ar-scan-status { font-size: 11px; letter-spacing: 2px; }
+  .ar-bottom { padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
+  .ar-minimap { width: 50px; height: 50px; }
+  .ar-minimap-label { font-size: 7px; }
+  .ar-bottom-center { font-size: 8px; }
+}
+
+@media (max-width: 540px) {
+  .ar-header { padding: 8px 10px; }
+  .ar-header-left { font-size: 10px; letter-spacing: 2px; }
+  .ar-header-right { display: none; }
+  .ar-content { padding: 8px; gap: 8px; }
+  .ar-panel { padding: 8px; }
+  .ar-portrait { width: 80px; height: 80px; }
+  .ar-scan-box { width: 130px; height: 165px; }
+  .ar-target-icon { font-size: 50px; }
+  .ar-field { font-size: 9px; padding: 4px 6px; }
+  .ar-hex-stream { display: none; }
+  .ar-bottom-center { display: none; }
+  .ar-verdict-box { font-size: 11px; padding: 8px 12px; }
+}

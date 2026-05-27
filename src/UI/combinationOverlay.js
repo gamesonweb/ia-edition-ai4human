@@ -1,20 +1,19 @@
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import './combinationOverlay.css'
 
-const COMBINATION = ['ArrowLeft', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp']
-
-const DIR = {
-  ArrowLeft:  { icon: 'fa-arrow-left',  label: '←', cls: 'dir-left'  },
-  ArrowUp:    { icon: 'fa-arrow-up',    label: '↑', cls: 'dir-up'    },
-  ArrowRight: { icon: 'fa-arrow-right', label: '→', cls: 'dir-right' },
-  ArrowDown:  { icon: 'fa-arrow-down',  label: '↓', cls: 'dir-down'  },
-}
+const CIRCUMFERENCE   = 2 * Math.PI * 90  // r=90 → ≈ 565.5
+const CLICK_INCREMENT = 4.5               // % par clic
+const DECAY_PER_SEC   = 10               // % par seconde de décroissance
+const DECAY_DELAY_MS  = 180              // délai avant que la décroissance commence
 
 export function showCombinationOverlay({ onClose, onSuccess } = {}) {
   document.getElementById('combo-overlay')?.remove()
 
-  let step    = 0
-  let locked  = false
+  let progress  = 0
+  let completed = false
+  let rafId     = null
+  let lastTime  = performance.now()
+  let lastClick = 0
 
   const overlay = document.createElement('div')
   overlay.id = 'combo-overlay'
@@ -25,63 +24,35 @@ export function showCombinationOverlay({ onClose, onSuccess } = {}) {
 
     <div class="cb-window">
       <header class="cb-header">
-        <div class="cb-header-icon"><i class="fa-solid fa-lock"></i></div>
+        <div class="cb-header-icon"><i class="fa-solid fa-bolt"></i></div>
         <div class="cb-header-text">
           <div class="cb-header-title">CONTRÔLE D'ACCÈS — USINE IA CENTRALE</div>
-          <div class="cb-header-sub">SYSTÈME DE SÉCURITÉ NIVEAU 4 · SÉQUENCE DIRECTIONNELLE REQUISE</div>
+          <div class="cb-header-sub">SURCHARGEZ LE PANNEAU — CLIQUEZ AUSSI VITE QUE POSSIBLE</div>
         </div>
       </header>
 
       <div class="cb-body">
-        <!-- Slots de combinaison -->
-        <div class="cb-slots" id="cb-slots">
-          ${COMBINATION.map((_, i) => `
-            <div class="cb-slot" id="cb-slot-${i}">
-              <div class="cb-slot-num">${i + 1}</div>
-              <div class="cb-slot-icon" id="cb-slot-icon-${i}">
-                <i class="fa-solid fa-question"></i>
-              </div>
-            </div>
-          `).join('')}
+        <div class="cb-ring-wrap">
+          <svg class="cb-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+            <circle class="cb-ring-track" cx="110" cy="110" r="90"/>
+            <circle class="cb-ring-fill"  cx="110" cy="110" r="90" id="cb-ring-fill"/>
+          </svg>
+          <button class="cb-ring-btn" id="cb-ring-btn" type="button">
+            <i class="fa-solid fa-bolt cb-ring-icon" id="cb-ring-icon"></i>
+            <span class="cb-ring-cta">CLIQUEZ !</span>
+            <span class="cb-ring-pct" id="cb-ring-pct">0%</span>
+          </button>
         </div>
 
-        <!-- Status -->
-        <div class="cb-status" id="cb-status">
+        <div class="cb-status">
           <span class="cb-blink">■</span>
-          <span id="cb-status-text">EN ATTENTE DE LA SÉQUENCE — UTILISEZ LES TOUCHES DIRECTIONNELLES</span>
-        </div>
-
-        <!-- Pad directionnel (déco) -->
-        <div class="cb-dpad">
-          <div class="cb-dpad-row">
-            <div class="cb-dpad-empty"></div>
-            <div class="cb-dpad-btn" id="cb-dpad-up"><i class="fa-solid fa-arrow-up"></i></div>
-            <div class="cb-dpad-empty"></div>
-          </div>
-          <div class="cb-dpad-row">
-            <div class="cb-dpad-btn" id="cb-dpad-left"><i class="fa-solid fa-arrow-left"></i></div>
-            <div class="cb-dpad-center"><i class="fa-solid fa-circle-dot"></i></div>
-            <div class="cb-dpad-btn" id="cb-dpad-right"><i class="fa-solid fa-arrow-right"></i></div>
-          </div>
-          <div class="cb-dpad-row">
-            <div class="cb-dpad-empty"></div>
-            <div class="cb-dpad-btn" id="cb-dpad-down"><i class="fa-solid fa-arrow-down"></i></div>
-            <div class="cb-dpad-empty"></div>
-          </div>
-        </div>
-
-        <!-- Progression -->
-        <div class="cb-progress-row">
-          <div class="cb-progress-track">
-            <div class="cb-progress-fill" id="cb-progress-fill" style="width:0%"></div>
-          </div>
-          <div class="cb-progress-label" id="cb-progress-label">0 / ${COMBINATION.length}</div>
+          <span id="cb-status-text">SURCHARGEZ LE SYSTÈME — MAINTENEZ LA CADENCE</span>
         </div>
       </div>
 
       <footer class="cb-footer">
         <span class="cb-bracket">[</span>
-        TOUCHES DIRECTIONNELLES pour entrer la séquence · <kbd>ESC</kbd> Annuler
+        CLIQUEZ RAPIDEMENT sur le panneau · <kbd>ESC</kbd> Annuler
         <span class="cb-bracket">]</span>
       </footer>
     </div>
@@ -90,88 +61,54 @@ export function showCombinationOverlay({ onClose, onSuccess } = {}) {
   document.body.appendChild(overlay)
   requestAnimationFrame(() => overlay.classList.add('open'))
 
-  const flash      = overlay.querySelector('#cb-flash')
-  const statusText = overlay.querySelector('#cb-status-text')
-  const progressFill  = overlay.querySelector('#cb-progress-fill')
-  const progressLabel = overlay.querySelector('#cb-progress-label')
+  const ringFill  = overlay.querySelector('#cb-ring-fill')
+  const ringBtn   = overlay.querySelector('#cb-ring-btn')
+  const ringPct   = overlay.querySelector('#cb-ring-pct')
+  const ringIcon  = overlay.querySelector('#cb-ring-icon')
+  const statusTxt = overlay.querySelector('#cb-status-text')
 
-  const DPAD_MAP = {
-    ArrowUp:    'cb-dpad-up',
-    ArrowDown:  'cb-dpad-down',
-    ArrowLeft:  'cb-dpad-left',
-    ArrowRight: 'cb-dpad-right',
-  }
+  const updateRing = () => {
+    const offset = CIRCUMFERENCE * (1 - progress / 100)
+    ringFill.style.strokeDashoffset = offset
 
-  const fillSlot = (index, key) => {
-    const d = DIR[key]
-    const slotEl = overlay.querySelector(`#cb-slot-${index}`)
-    const iconEl = overlay.querySelector(`#cb-slot-icon-${index}`)
-    if (!slotEl || !iconEl) return
-    iconEl.innerHTML = `<i class="fa-solid ${d.icon}"></i>`
-    slotEl.classList.add('filled', d.cls)
-  }
-
-  const resetSlots = () => {
-    for (let i = 0; i < COMBINATION.length; i++) {
-      const slotEl = overlay.querySelector(`#cb-slot-${i}`)
-      const iconEl = overlay.querySelector(`#cb-slot-icon-${i}`)
-      if (slotEl) slotEl.className = 'cb-slot'
-      if (iconEl) iconEl.innerHTML = `<i class="fa-solid fa-question"></i>`
+    // Couleur : rouge → orange → vert selon le remplissage
+    let stroke, glow
+    if (progress < 40) {
+      stroke = '#EF4444'; glow = 'rgba(239,68,68,0.5)'
+    } else if (progress < 75) {
+      stroke = '#F59E0B'; glow = 'rgba(245,158,11,0.5)'
+    } else {
+      stroke = '#4ADE80'; glow = 'rgba(74,222,128,0.55)'
     }
-    if (progressFill)  progressFill.style.width = '0%'
-    if (progressLabel) progressLabel.textContent = `0 / ${COMBINATION.length}`
-  }
+    ringFill.style.stroke = stroke
+    ringFill.style.filter = `drop-shadow(0 0 8px ${glow})`
+    ringPct.textContent   = `${Math.round(progress)}%`
 
-  const flashDpad = (key) => {
-    const id = DPAD_MAP[key]
-    if (!id) return
-    const btn = overlay.querySelector(`#${id}`)
-    if (!btn) return
-    btn.classList.add('pressed')
-    setTimeout(() => btn.classList.remove('pressed'), 180)
-  }
-
-  const triggerError = () => {
-    locked = true
-    flash.classList.add('active')
-    statusText.textContent = '⚠ SÉQUENCE INCORRECTE — RÉINITIALISATION...'
-    overlay.querySelector('#cb-slots')?.classList.add('error')
-
-    setTimeout(() => {
-      flash.classList.remove('active')
-      overlay.querySelector('#cb-slots')?.classList.remove('error')
-      resetSlots()
-      step = 0
-      locked = false
-      statusText.textContent = 'EN ATTENTE DE LA SÉQUENCE — UTILISEZ LES TOUCHES DIRECTIONNELLES'
-    }, 1200)
+    overlay.querySelector('.cb-ring-wrap').style.setProperty('--ring-color', stroke)
   }
 
   const triggerSuccess = () => {
-    locked = true
-    overlay.querySelector('#cb-slots')?.classList.add('success')
-    statusText.textContent = '✓ COMBINAISON VALIDÉE — ACCÈS AUTORISÉ'
+    completed = true
+    cancelAnimationFrame(rafId)
 
-    // Affiche le succès après un court délai
-    setTimeout(() => {
-      renderSuccess()
-    }, 900)
+    ringBtn.classList.add('success')
+    statusTxt.textContent = '✓ SYSTÈME SURCHARGÉ — ACCÈS FORCÉ'
+
+    setTimeout(() => renderSuccess(), 700)
   }
 
   const renderSuccess = () => {
     overlay.querySelector('.cb-body').innerHTML = `
       <div class="cb-success">
-        <div class="cb-success-icon">
-          <i class="fa-solid fa-door-open"></i>
-        </div>
+        <div class="cb-success-icon"><i class="fa-solid fa-door-open"></i></div>
         <div class="cb-success-title">ACCÈS AUTORISÉ</div>
         <div class="cb-success-sub">
-          Séquence validée — les portes de l'usine centrale IA s'ouvrent.
+          Panneau de sécurité surchargé — les portes de l'usine centrale IA s'ouvrent.
         </div>
         <div class="cb-success-card">
           <div><span>SITE</span><b>Usine Centrale IA</b></div>
-          <div><span>NIVEAU D'ACCÈS</span><b style="color:#4ADE80">AUTORISÉ ✓</b></div>
-          <div><span>SÉQUENCE</span><b style="color:#67E8F9">← ↑ ← → ↓ ↑</b></div>
+          <div><span>NIVEAU D'ACCÈS</span><b style="color:#4ADE80">FORCÉ ✓</b></div>
+          <div><span>MÉTHODE</span><b style="color:#67E8F9">SURCHARGE ÉLECTRIQUE</b></div>
         </div>
         <button class="cb-finish-btn" id="cb-finish-btn">
           <i class="fa-solid fa-right-from-bracket"></i>
@@ -182,45 +119,50 @@ export function showCombinationOverlay({ onClose, onSuccess } = {}) {
     overlay.querySelector('#cb-finish-btn').addEventListener('click', doSuccess)
   }
 
-  const onKey = (e) => {
-    if (e.key === 'Escape') { doClose(); return }
-    if (locked) return
-    if (!DIR[e.key]) return
+  // ── Boucle de décroissance (rAF) ──────────────────────────────────────────
+  const gameLoop = (now) => {
+    if (completed) return
+    const dt = (now - lastTime) / 1000
+    lastTime = now
 
-    e.preventDefault()
-    flashDpad(e.key)
-
-    const expected = COMBINATION[step]
-    if (e.key !== expected) {
-      triggerError()
-      return
+    const timeSinceClick = now - lastClick
+    if (timeSinceClick > DECAY_DELAY_MS && progress > 0) {
+      progress = Math.max(0, progress - DECAY_PER_SEC * dt)
+      updateRing()
     }
 
-    fillSlot(step, e.key)
-    step++
-
-    const pct = (step / COMBINATION.length * 100).toFixed(0)
-    if (progressFill)  progressFill.style.width  = pct + '%'
-    if (progressLabel) progressLabel.textContent = `${step} / ${COMBINATION.length}`
-
-    if (step === COMBINATION.length) {
-      triggerSuccess()
-    } else {
-      statusText.textContent = `${step} / ${COMBINATION.length} — CONTINUEZ...`
-    }
+    rafId = requestAnimationFrame(gameLoop)
   }
+  rafId = requestAnimationFrame(gameLoop)
+
+  // ── Clic sur le bouton ────────────────────────────────────────────────────
+  ringBtn.addEventListener('click', () => {
+    if (completed) return
+    lastClick = performance.now()
+    progress  = Math.min(100, progress + CLICK_INCREMENT)
+    updateRing()
+
+    // Feedback visuel du clic
+    ringBtn.classList.add('pulse')
+    setTimeout(() => ringBtn.classList.remove('pulse'), 100)
+
+    if (progress >= 100) triggerSuccess()
+  })
+
+  // ── Clavier ───────────────────────────────────────────────────────────────
+  const onKey = (e) => { if (e.key === 'Escape') doClose() }
   window.addEventListener('keydown', onKey)
 
-  const doSuccess = () => {
-    doClose()
-    onSuccess?.()
-  }
+  const doSuccess = () => { doClose(); onSuccess?.() }
 
   const doClose = () => {
+    completed = true
+    cancelAnimationFrame(rafId)
     window.removeEventListener('keydown', onKey)
     overlay.classList.add('closing')
     setTimeout(() => { overlay.remove(); onClose?.() }, 380)
   }
 
+  updateRing()
   return { close: doClose }
 }

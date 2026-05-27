@@ -30,6 +30,7 @@ import { setupDeathScreen }       from './UI/deathScreen.js'
 import { setupNotifications }     from './UI/notification.js'
 import { setupCrosshair }        from './UI/crosshair.js'
 import { showMainMenu }           from './UI/mainMenu.js'
+import { startTronScene }         from './minigame/tron/tronScene.js'
 import { loadMapParts }           from './scene/mapLoader.js'
 import { loadLevel1, LEVEL1_INTRO } from './levels/level1/index.js'
 import { loadLevel2, LEVEL2_INTRO } from './levels/level2/index.js'
@@ -47,7 +48,7 @@ import { loadTutorial }           from './levels/tutorial/index.js'
 import { playCutscene }           from './UI/cutscene.js'
 import { showEndScreen }          from './UI/endScreen.js'
 import { showOutroVideo }         from './UI/outroVideo.js'
-import { attachChunkLoop }        from './scene/chunkManager.js'
+import { attachChunkLoop, listMapChunks } from './scene/chunkManager.js'
 import { spawnPNJFleet, attachPNJLoop } from './pnj/pnjManager.js'
 
 const app = document.querySelector('#app')
@@ -61,6 +62,7 @@ const engine = new Engine(canvas, true /* antialias on */, {
   stencil:                  true,
   powerPreference:          'high-performance',
   disableWebGL2Support:     false,
+  adaptToDeviceRatio:       true,
 })
 const scene  = new Scene(engine)
 scene.collisionsEnabled           = true
@@ -348,27 +350,27 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     // Plan 1 — zone joueur / contexte
     {
       pos: [20, 5, 336], tar: [29, 1.5, 322],
-      subtitle: '6 caméras de surveillance actives dans la zone. Neutralisez-les toutes.',
+      subtitle: 'Pour ne pas se faire repérer facilement par la reconnaissance IA.',
       hold: 2800, move: 1800,
     },
     // Plan 2 — caméra nord-est (95.89, 12, 271.99) — orbit
     {
       pos: [86, 5, 272], tar: [96, 12, 272],
       orbit: { deg: 90 },
-      subtitle: 'Elles sont disséminées du nord...',
+      subtitle: '6 caméras de surveillance actives dans la zone. Neutralisez-les toutes.',
       hold: 3200, move: 1600,
     },
     // Plan 3 — caméra sud-ouest (-93.16, 12, 23.81) — saut lointain
     {
       pos: [-84, 5, 24], tar: [-93, 12, 24],
       cut: true, teleport: true,
-      subtitle: '...au sud de Rey Michell.. Cherchez. Visez. Détruisez.',
+      subtitle: 'Cherchez. Visez. Détruisez.',
       hold: 3000, move: 1600,
     },
     // Plan 4 — retour joueur
     {
       pos: [20, 5, 336], tar: [29, 1.5, 322],
-      subtitle: 'Six cibles. Pas de quartier.',
+      subtitle: 'Six cibles !',
       hold: 2500,
     },
   ]
@@ -405,7 +407,13 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       subtitle: 'Un terminal d\'administration dans la zone industrielle. Enregistrez-vous comme robot autorisé.',
       hold: 3500, move: 1600,
     },
-    // Plan 3 — retour joueur
+    // Plan 3 — avertissement délai
+    {
+      pos: [20, 4.5, 336], tar: [29, 1.5, 322],
+      subtitle: 'Attention, ça peut prendre quelques heures pour que les IA vous considèrent comme un véritable robot.',
+      hold: 3200, move: 1600,
+    },
+    // Plan 4 — retour joueur
     {
       pos: [20, 4.5, 336], tar: [29, 1.5, 322],
       subtitle: 'Approchez le terminal et appuyez sur E. Votre robot vous aidera.',
@@ -497,12 +505,12 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
       cut: true,
       teleport: true,
       orbit: { deg: 120 },
-      subtitle: 'Votre robot IA contaminé rôde dans la zone industrielle.',
+      subtitle: 'Votre robot IA contaminé rôde dans la zone industrielle. Détruisez-le !',
       hold: 3500, move: 1800,
     },
     {
       pos: [15, 4.5, 310], tar: [25, 1, 310],
-      subtitle: 'Récupérez-le et déposez-le dans la zone verte.',
+      subtitle: 'Récupérez le corps et déposez-le dans la zone verte.',
       hold: 2800, move: 1600,
     },
     {
@@ -535,7 +543,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     // Plan 1 — carte 1 (24.02, 354.81)
     {
       pos: [14, 4.5, 355], tar: [24, 0.8, 354],
-      subtitle: 'Poste de contrôle frontalier Rey Michell.· Zone de sécurité 7',
+      subtitle: 'Poste de contrôle frontalier Rey Michell.',
       hold: 2800, move: 1800,
     },
     // Plan 2 — carte 2 (-24.17, 311.15)
@@ -547,7 +555,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
     // Plan 3 — carte 3 (51.76, 307.46)
     {
       pos: [43, 4.5, 315], tar: [51, 0.8, 307],
-      subtitle: 'Trois cartes à récupérer.',
+      subtitle: 'Trois cartes à récupérer pour pouvoir sortir de cette zone.',
       hold: 2800, move: 1800,
     },
     // Plan 4 — soldat / barrière (danger)
@@ -656,6 +664,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   restartCurrentLevel = startLevel1
   setupControls(scene, player.hero, player.animations, camera, canvas)
   attachChunkLoop(scene, () => heroRef?.position ?? null)
+  window.__chunkDebug = () => listMapChunks()
   attachPNJLoop(scene,   () => heroRef?.position ?? null)
 
   setupVisibilityManager(scene, camera, player.meshes)
@@ -703,4 +712,7 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
 }
 
 // ---- Écran d'accueil ----
-showMainMenu({ onPlay: (opts) => startGame(opts) })
+showMainMenu({
+  onPlay: (opts) => startGame(opts),
+  onPlayExtra: () => startTronScene(),
+})

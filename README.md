@@ -53,6 +53,7 @@ Voici l’ensemble de nos vidéos :
 - [Level 8 - Connexion IA](https://youtu.be/Pf-UrF0eR_E)
 - [Level 9 - Entrée de la centrale de données](https://youtu.be/7uYBQiFguak)
 - [Épilogue de fin](https://youtu.be/M3UJqIa7CRo)
+- [Bonus Game - Gameplay](https://youtu.be/Auwj2fOOGIY)
 
 > [!NOTE]
 > Tous les niveaux sont enregistrés et publiés sur YouTube.

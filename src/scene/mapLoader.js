@@ -13,11 +13,8 @@ const MAP_PARTS     = [
 ]
 
 /**
- * Charge toutes les parties de la map en parallèle.
- * Chaque partie est enregistrée comme chunk dans le chunkManager.
- *
  * @param {import('@babylonjs/core').Scene} scene
- * @returns {Promise<Array<{ mainMesh: import('@babylonjs/core').AbstractMesh, center: Vector3, radius: number }>>}
+ * @returns {Promise<Array<{ mainMesh: import('@babylonjs/core').AbstractMesh }>>}
  */
 export async function loadMapParts(scene) {
   const results = await Promise.all(
@@ -38,14 +35,6 @@ export async function loadMapParts(scene) {
 }
 
 /**
- * Traite les meshes d'une partie :
- * 1. Rotation racine à Math.PI
- * 2. Groupement par nom de base + thin instances pour les doublons
- * 3. Collisions sur les meshes avec géométrie
- * 4. Calcul du centre / rayon (AVANT freeze)
- * 5. Enregistrement dans le chunkManager
- * 6. Freeze world matrix + matériaux
- *
  * @param {import('@babylonjs/core').AbstractMesh[]} meshes
  * @param {string} partName
  */
@@ -53,7 +42,9 @@ function processMapPart(meshes, partName) {
   const root = meshes.find(m => m.name === '__root__') ?? meshes[0]
   if (root) root.rotation.y = Math.PI
 
-  // --- Thin instances : groupement par nom de base ---
+  // Force world matrix avec la nouvelle rotation avant tout calcul de position
+  root.computeWorldMatrix(true)
+
   /** @type {Map<string, { original: import('@babylonjs/core').Mesh, matrices: import('@babylonjs/core').Matrix[] }>} */
   const meshMap = new Map()
 
@@ -79,25 +70,25 @@ function processMapPart(meshes, partName) {
       original.thinInstanceAdd(matrix, false)
     }
     original.thinInstanceBufferUpdated('matrix')
+    // Bounding box étendue à toutes les instances pour que le frustum culling soit correct
+    original.thinInstanceRefreshBoundingInfo()
   }
 
-  // Meshes actifs = les "originals" de chaque groupe (thin instances incluses)
+  // Meshes actifs = les "originals" de chaque groupe
   const activeMeshes = [...meshMap.values()].map(e => e.original)
 
-  // --- Calcul centre + rayon sur la hiérarchie AVANT freeze ---
-  root.computeWorldMatrix(true)
+  // Centre du chunk = centre de la bounding box de toute la hiérarchie (en world space)
+  root.getHierarchyBoundingVectors(true)  // force world matrices sur tous les enfants
   const { min, max } = root.getHierarchyBoundingVectors(true)
   const center = Vector3.Center(min, max)
-  const radius = Vector3.Distance(min, max) / 2
 
-  // --- Enregistrement chunk avec la liste de meshes actifs ---
-  registerMapChunk(partName, activeMeshes, center, radius)
+  registerMapChunk(partName, activeMeshes, center)
 
-  // --- Freeze (après le calcul de bounding box) ---
+  // Freeze après l'enregistrement
   for (const mesh of meshes) {
     mesh.freezeWorldMatrix()
     if (mesh.material) mesh.material.freeze()
   }
 
-  return { mainMesh: root, center, radius }
+  return { mainMesh: root }
 }

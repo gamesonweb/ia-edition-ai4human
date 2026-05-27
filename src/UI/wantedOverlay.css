@@ -239,3 +239,26 @@
   filter: drop-shadow(0 0 18px rgba(74,222,128,0.6));
   animation: hk-pop 0.45s cubic-bezier(.34,1.56,.64,1) backwards;
 }
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .wd-card { padding: 10px 12px; gap: 10px; }
+  .wd-avatar { width: 42px; height: 42px; flex: 0 0 42px; font-size: 16px; }
+  .wd-name { font-size: 13px; }
+  .wd-id { font-size: 9px; }
+  .wd-badges { flex-wrap: wrap; gap: 4px; }
+  .wd-detail-grid { gap: 14px; }
+  .wd-field { padding: 8px 10px; }
+  .wd-field-value { font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .wd-list { gap: 7px; }
+  .wd-card { padding: 8px 10px; gap: 8px; }
+  .wd-avatar { width: 36px; height: 36px; flex: 0 0 36px; font-size: 14px; }
+  .wd-name { font-size: 12px; }
+  .wd-id { display: none; }
+  .wd-badge { font-size: 8px; padding: 2px 6px; }
+  .wd-remaining,
+  .wd-all-done { padding: 8px 12px; font-size: 12px; }
+}

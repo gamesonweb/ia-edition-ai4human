@@ -35,7 +35,7 @@ const WANTED_PERSONS = [
     name:    'George A.J',
     type:    'human',
     threat:  'haute',
-    photo:   '/img/photoProfile/george.jpg',
+    photo:   '/img/photoProfile/george.png',
     details: {
       poste:  'Ingénieur réseau — Université Nice Côte d\'Azur',
       motif:  'Complicité avec J-001 · Intrusion dans les serveurs IA-CONTROL',

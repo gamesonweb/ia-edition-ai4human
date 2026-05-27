@@ -43,7 +43,7 @@ const GAME_TIPS = [
   'Gardez un œil sur votre jauge de détection : fuir vaut mieux que combattre.',
 ]
 
-export function showMainMenu({ onPlay } = {}) {
+export function showMainMenu({ onPlay, onPlayExtra } = {}) {
   document.getElementById('main-menu')?.remove()
 
   const container = document.createElement('div')
@@ -76,13 +76,21 @@ export function showMainMenu({ onPlay } = {}) {
               </div>
 
               <div class="mm-actions">
-                <button class="mm-btn primary" type="button" data-action="play">
+                <button class="mm-btn primary main-game-btn" type="button" data-action="play">
                   <i class="fa-solid fa-play"></i>
-                  <span class="mm-btn-label">Lancer</span>
+                  <span class="mm-btn-label">Main Game</span>
+                </button>
+                <button class="mm-btn" type="button" data-action="play-extra">
+                  <i class="fa-solid fa-motorcycle"></i>
+                  <span class="mm-btn-label">Bonus Game</span>
                 </button>
                 <button class="mm-btn" type="button" data-action="credits">
                   <i class="fa-solid fa-users"></i>
                   <span>Crédits</span>
+                </button>
+                <button class="mm-btn bts-btn" type="button" data-action="bts">
+                  <i class="fa-solid fa-clapperboard"></i>
+                  <span>Behind the Scene</span>
                 </button>
               </div>
 
@@ -308,13 +316,45 @@ export function showMainMenu({ onPlay } = {}) {
   }
 
   // ---- Boutons home ----
-  const playBtn    = container.querySelector('[data-action="play"]')
-  const creditsBtn = container.querySelector('[data-action="credits"]')
+  const playBtn      = container.querySelector('[data-action="play"]')
+  const playExtraBtn = container.querySelector('[data-action="play-extra"]')
+  const creditsBtn   = container.querySelector('[data-action="credits"]')
   playBtn   .addEventListener('click', () => {
     goTo('name')
     setTimeout(() => container.querySelector('input[name="player-name"]')?.focus(), 350)
   })
+  playExtraBtn.addEventListener('click', async () => {
+    if (starting) return
+    starting = true
+    playBtn.disabled = true
+    playExtraBtn.disabled = true
+    creditsBtn.disabled = true
+
+    // Libère le GPU du menu pendant le chargement du jeu
+    safeStop(stage, 'stage')
+
+    showLoader()
+
+    let postLoad = null
+    try {
+      postLoad = await onPlayExtra?.()
+    } catch (err) {
+      console.error('[mainMenu] échec du lancement Extra', err)
+      hideLoader(true)
+      playBtn.disabled = false
+      playExtraBtn.disabled = false
+      creditsBtn.disabled = false
+      starting = false
+      return
+    }
+
+    await hideLoader()
+    finish()
+    postLoad?.()
+  })
   creditsBtn.addEventListener('click', () => goTo('credits'))
+  container.querySelector('[data-action="bts"]')
+    .addEventListener('click', () => window.open('https://js-blackout-behind-the-scene-gow.vercel.app/', '_blank', 'noopener,noreferrer'))
 
   // ---- Retour crédits ----
   container.querySelector('[data-action="back"]')
