@@ -1,5 +1,6 @@
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera'
 import { Vector3 }    from '@babylonjs/core/Maths/math.vector'
+import { showAllMapChunks, resumeChunkCulling } from '../scene/chunkManager'
 import './cutscene.css'
 
 const toV3 = ([x, y, z]) => new Vector3(x, y, z)
@@ -125,6 +126,7 @@ export function playCutscene(scene, shots, { chapter = '', onDone } = {}) {
   const wasPaused = scene.metadata?.paused ?? false
   if (scene.metadata) scene.metadata.paused = true
   const savedHUD = hideHUD(scene)
+  showAllMapChunks()
 
   // ---- Caméra cinématique ----
   const prevCamera = scene.activeCamera
@@ -195,6 +197,7 @@ export function playCutscene(scene, shots, { chapter = '', onDone } = {}) {
     cineCam.dispose()
     if (scene.metadata) scene.metadata.paused = wasPaused
     restoreHUD(scene, savedHUD)
+    resumeChunkCulling()
     overlay.classList.remove('cs-visible')
     overlay.classList.add('cs-closing')
     setTimeout(() => { overlay.remove(); onDone?.() }, 500)

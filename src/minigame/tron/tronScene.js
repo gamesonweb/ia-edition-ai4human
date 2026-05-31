@@ -15,6 +15,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import '@babylonjs/loaders/glTF';
@@ -22,6 +23,7 @@ import '@babylonjs/loaders/glTF';
 import { setupPauseButton } from '../../UI/pauseButton.js';
 import { createAIAssistant } from '../../extraGame/aiAssistant.js';
 import EMBEDDED_PATH from './idealPath.js';
+import { showBriefing } from './briefing.js';
 
 import {
   TARGET_FPS, GRAVITY, MAP_BASE_PATH, MAP_PARTS,
@@ -31,6 +33,7 @@ import { GAME_CONFIG } from '../../config/gameConfig.js';
 import { createCyberSky, addNeonAtmosphericLights, createWireframeMaterial } from './environment.js';
 import { setupTronHUD } from './hud.js';
 import { showCutscene } from './cutscene.js';
+import { t } from './i18n.js';
 import { saveIdealPath, loadIdealPath, findNearestForward, getLookaheadPoint } from './pathUtils.js';
 import { fmtMs, showRaceToast, showCoordsToast } from './utils.js';
 
@@ -43,13 +46,26 @@ export async function startTronScene() {
   if (!canvas) throw new Error('Élément renderCanvas introuvable');
 
   // 1. Moteur & Scène isolés
+  const QUALITY_KEY    = 'babylon-akira:quality'
+  const _rawQ          = localStorage.getItem(QUALITY_KEY) ?? 'high'
+  const savedQuality   = _rawQ === 'quality' ? 'high'
+                       : _rawQ === 'performance' ? 'low'
+                       : ['low', 'mid', 'high', 'extra'].includes(_rawQ) ? _rawQ : 'high'
+  const QUALITY_CFG    = {
+    low:   { scaling: 2.0, fxaa: false, bloomWeight: 0.2, bloomKernel: 4  },
+    mid:   { scaling: 1.5, fxaa: false, bloomWeight: 0.5, bloomKernel: 8  },
+    high:  { scaling: 1.0, fxaa: true,  bloomWeight: 0.8, bloomKernel: 16 },
+    extra: { scaling: 0.8, fxaa: true,  bloomWeight: 1.2, bloomKernel: 32 },
+  }
+  const initialScaling = QUALITY_CFG[savedQuality].scaling
+
   const engine = new Engine(canvas, true, {
     preserveDrawingBuffer: false,
     stencil: true,
     powerPreference: 'high-performance',
     adaptToDeviceRatio: true,
   });
-  engine.setHardwareScalingLevel(1.5);
+  engine.setHardwareScalingLevel(initialScaling);
 
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.01, 0.01, 0.03, 1);
@@ -301,6 +317,15 @@ export async function startTronScene() {
   pipeline.bloomWeight    = 0.8;
   pipeline.bloomKernel    = 16;
   pipeline.bloomScale     = 0.35;
+  pipeline.fxaaEnabled    = QUALITY_CFG[savedQuality].fxaa;
+
+  const applyQuality = (mode) => {
+    const cfg = QUALITY_CFG[mode] ?? QUALITY_CFG.high
+    engine.setHardwareScalingLevel(cfg.scaling)
+    pipeline.fxaaEnabled = cfg.fxaa
+    pipeline.bloomWeight = cfg.bloomWeight
+    pipeline.bloomKernel = cfg.bloomKernel
+  }
 
   // 14b. Traînée cyan
   const TRAIL_SPEED_MIN = 1.2;
@@ -403,7 +428,7 @@ export async function startTronScene() {
   let recordTick   = 0;
   const RECORD_EVERY = 8;
 
-  if (_lsPath) showRaceToast(`TRACÉ CUSTOM CHARGÉ — ${_lsPath.length} pts`, 2500);
+  if (_lsPath) showRaceToast(t('toast.path_load', { n: _lsPath.length }), 2500);
 
   // ─── Pilotes IA ────────────────────────────────────────────────────────────
   const aiRacers = AI_PROFILES.map((profile, idx) => {
@@ -436,6 +461,13 @@ export async function startTronScene() {
       pathIndex: 0, nearLapEnd: false,
       waypointIdx: 0,
       lap: 1, finished: false,
+      // Trail state for AI
+      trailActive: false,
+      trailActiveUntil: 0,
+      trailCooldown: 0,
+      trailPrevPos: null,
+      // Death/respawn state for AI
+      deadUntil: 0,
     };
   });
 
@@ -453,6 +485,174 @@ export async function startTronScene() {
   const _upVec   = new Vector3(0, 1, 0);
   const _fwdVec  = new Vector3(0, 0, 1);
   const _rollAxis = new Vector3(1, 0, 0);
+
+  // ─── Système de traînée mortelle ──────────────────────────────────────────
+  const TRAIL_WALL_HEIGHT    = 2.5;
+  const TRAIL_SEGMENT_DIST   = 2.5;   // distance min entre 2 points
+  const TRAIL_LIFETIME_MS    = 17000; // durée avant disparition
+  const TRAIL_FADE_MS        = 2000;  // durée du fade
+  const RESPAWN_DELAY_MS     = 2000;  // 2 secondes de mort
+  const AI_TRAIL_DURATION_MIN = 1000; // durée min traînée IA
+  const AI_TRAIL_DURATION_MAX = 3000; // durée max traînée IA
+  const AI_TRAIL_COOLDOWN     = 8000; // cooldown entre traînées IA
+  const AI_TRAIL_CHANCE        = 0.005; // probabilité par frame
+  const AI_TRAIL_DETECT_DIST   = 35;   // distance max pour que l'IA détecte le joueur
+  const TRAIL_COLLISION_DIST   = 1.8;  // rayon de collision simplifié
+  const TRAIL_GRACE_SEGMENTS   = 4;    // nb segments récents ignorés (grâce)
+
+  /** @type {{ mesh: import('@babylonjs/core').Mesh, owner: string, createdAt: number, points: {x:number,y:number,z:number}[] }[]} */
+  const lightTrails = [];
+  let playerTrailActive = false;
+  let playerTrailPrevPos = null;
+  let playerDeadUntil = 0;
+  let playerLastCheckpoint = null; // position de respawn
+
+  // Matériaux des traînées
+  const trailMatPlayer = new StandardMaterial('trail-mat-player', scene);
+  trailMatPlayer.emissiveColor   = new Color3(0.0, 0.7, 1.0);
+  trailMatPlayer.diffuseColor    = new Color3(0.0, 0.2, 0.3);
+  trailMatPlayer.specularColor   = new Color3(0, 0, 0);
+  trailMatPlayer.alpha           = 0.85;
+  trailMatPlayer.backFaceCulling = false;
+  trailMatPlayer.disableLighting = true;
+
+  const trailMatAI = new StandardMaterial('trail-mat-ai', scene);
+  trailMatAI.emissiveColor   = new Color3(1.0, 0.35, 0.0);
+  trailMatAI.diffuseColor    = new Color3(0.3, 0.1, 0.0);
+  trailMatAI.specularColor   = new Color3(0, 0, 0);
+  trailMatAI.alpha           = 0.85;
+  trailMatAI.backFaceCulling = false;
+  trailMatAI.disableLighting = true;
+
+  /**
+   * Crée un segment de mur de traînée entre deux positions.
+   * @param {Vector3} from
+   * @param {Vector3} to
+   * @param {string} owner - 'player' ou 'ai-X'
+   * @returns {import('@babylonjs/core').Mesh}
+   */
+  function createTrailSegment(from, to, owner) {
+    const mat = owner === 'player' ? trailMatPlayer : trailMatAI;
+    const baseY = Math.min(from.y, to.y) - 0.5;
+    const topY  = baseY + TRAIL_WALL_HEIGHT;
+
+    const paths = [
+      [new Vector3(from.x, baseY, from.z), new Vector3(to.x, baseY, to.z)],
+      [new Vector3(from.x, topY,  from.z), new Vector3(to.x, topY,  to.z)],
+    ];
+
+    const ribbon = MeshBuilder.CreateRibbon(`trail-${owner}-${Date.now()}`, {
+      pathArray: paths,
+      sideOrientation: Mesh.DOUBLESIDE,
+      updatable: false,
+    }, scene);
+
+    ribbon.material        = mat;
+    ribbon.isPickable      = false;
+    ribbon.checkCollisions = false;
+
+    const midX = (from.x + to.x) / 2;
+    const midZ = (from.z + to.z) / 2;
+
+    lightTrails.push({
+      mesh: ribbon,
+      owner,
+      createdAt: performance.now(),
+      midX, midZ, baseY, topY,
+    });
+
+    return ribbon;
+  }
+
+  /**
+   * Vérifie si une position est en collision avec un segment de traînée.
+   * Utilise une distance point-segment simplifiée.
+   */
+  function checkTrailCollision(posX, posY, posZ, entityOwner) {
+    const now = performance.now();
+    // Count segments owned by this entity to determine grace period
+    let ownCount = 0;
+    for (let i = lightTrails.length - 1; i >= 0; i--) {
+      const t = lightTrails[i];
+      if (t.owner !== entityOwner) continue;
+      ownCount++;
+    }
+
+    let ownIdx = 0;
+    for (let i = lightTrails.length - 1; i >= 0; i--) {
+      const t = lightTrails[i];
+      // Skip segments that are fading out
+      if (now - t.createdAt > TRAIL_LIFETIME_MS) continue;
+      // Grace period for own recent segments
+      if (t.owner === entityOwner) {
+        ownIdx++;
+        if (ownIdx <= TRAIL_GRACE_SEGMENTS) continue;
+      }
+      // Height check
+      if (posY < t.baseY || posY > t.topY + 0.5) continue;
+      // Distance check to segment midpoint
+      const dx = posX - t.midX;
+      const dz = posZ - t.midZ;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < TRAIL_COLLISION_DIST * TRAIL_COLLISION_DIST) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Fait respawn une entité à une position donnée
+   */
+  function respawnPlayer() {
+    const respawnPos = playerLastCheckpoint || MOTO.SPAWN;
+    moto.position.copyFrom(respawnPos);
+    moto.position.y += 1.0;
+    motoSpeed = 0;
+    playerTrailActive = false;
+    playerTrailPrevPos = null;
+    playerDeadUntil = 0;
+    motoResult.meshes.forEach(m => m.setEnabled(true));
+    hud.hideDeath();
+    hud.setTrailActive(false);
+    showRaceToast(t('toast.respawn'), 1500);
+  }
+
+  function killPlayer(now) {
+    playerDeadUntil = now + RESPAWN_DELAY_MS;
+    motoSpeed = 0;
+    playerTrailActive = false;
+    playerTrailPrevPos = null;
+    motoResult.meshes.forEach(m => m.setEnabled(false));
+    hud.setTrailActive(false);
+    showRaceToast(t('toast.eliminated'), 2000);
+  }
+
+  function killAI(ai, now) {
+    ai.deadUntil = now + RESPAWN_DELAY_MS;
+    ai.speed = 0;
+    ai.trailActive = false;
+    ai.trailPrevPos = null;
+    ai.res.meshes.forEach(m => m.setEnabled(false));
+  }
+
+  function respawnAI(ai) {
+    // Respawn at a point slightly behind current path position
+    const respawnIdx = Math.max(0, ai.pathIndex - 20);
+    if (savedPath && savedPath.length > 0) {
+      const pt = savedPath[respawnIdx];
+      ai.root.position.set(pt.x, pt.y + 1.0, pt.z);
+      ai.pathIndex = respawnIdx;
+    } else {
+      const cpIdx = AI_ROUTE[ai.waypointIdx];
+      const cp = RACE.CHECKPOINTS[cpIdx];
+      ai.root.position.set(cp.x, cp.y + 1.0, cp.z);
+    }
+    ai.speed = 0;
+    ai.deadUntil = 0;
+    ai.trailPrevPos = null;
+    ai.res.meshes.forEach(m => m.setEnabled(true));
+  }
 
   // 16. Inputs
   const inputMap = {};
@@ -523,6 +723,7 @@ export async function startTronScene() {
   const onKeyDown = e => {
     if (e.code === 'KeyK') { e.preventDefault(); aiOpen ? closeAI() : openAI(); return; }
     if (e.key === 'Escape' && aiOpen) { closeAI(); return; }
+    if (e.code === 'Space') { e.preventDefault(); inputMap[' '] = true; return; }
     inputMap[e.key.toLowerCase()] = true;
     if (e.key.toLowerCase() === 'r') {
       if (!isRecording) {
@@ -530,7 +731,7 @@ export async function startTronScene() {
         recordedPath = [];
         recordTick   = 0;
         hud.setRecording(true);
-        showRaceToast('⏺ ENREGISTREMENT DU TRACÉ...', 999999);
+        showRaceToast(t('toast.recording'), 999999);
       } else {
         isRecording = false;
         hud.setRecording(false);
@@ -547,16 +748,16 @@ export async function startTronScene() {
           a.click();
           URL.revokeObjectURL(url);
 
-          showRaceToast(`✓ TRACÉ SAUVEGARDÉ — ${savedPath.length} pts`, 3500);
+          showRaceToast(t('toast.saved', { n: savedPath.length }), 3500);
         } else {
-          showRaceToast('TRACÉ TROP COURT — annulé', 2500);
+          showRaceToast(t('toast.too_short'), 2500);
         }
       }
     }
     if (e.key.toLowerCase() === 't') {
       moto.position.copyFrom(MOTO.SPAWN);
       motoSpeed = 0;
-      showRaceToast('TÉLÉPORTATION — SPAWN', 1500);
+      showRaceToast(t('toast.teleport'), 1500);
     }
     if (e.key.toLowerCase() === 'p') {
       const p   = moto.position;
@@ -565,7 +766,10 @@ export async function startTronScene() {
       showCoordsToast(msg);
     }
   };
-  const onKeyUp = e => { inputMap[e.key.toLowerCase()] = false; };
+  const onKeyUp = e => {
+    if (e.code === 'Space') { inputMap[' '] = false; return; }
+    inputMap[e.key.toLowerCase()] = false;
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
@@ -632,11 +836,22 @@ export async function startTronScene() {
       turboUntil = 0;
     }
 
-    const kb  = GAME_CONFIG.KEYBOARD.CONTROLS[GAME_CONFIG.KEYBOARD.LAYOUT] ?? GAME_CONFIG.KEYBOARD.CONTROLS.AZERTY;
-    const fwd = inputMap[kb.FORWARD]  || inputMap['arrowup'];
-    const bwd = inputMap[kb.BACKWARD] || inputMap['arrowdown'];
-    const lft = inputMap[kb.LEFT]     || inputMap['arrowleft'];
-    const rgt = inputMap[kb.RIGHT]    || inputMap['arrowright'];
+    // ── Player death / respawn ──
+    if (playerDeadUntil > 0) {
+      if (now >= playerDeadUntil) {
+        respawnPlayer();
+      } else {
+        const remaining = (playerDeadUntil - now) / 1000;
+        hud.showDeath(remaining);
+        return; // skip all player logic while dead
+      }
+    }
+
+    const ctrl = GAME_CONFIG.KEYBOARD.CONTROLS[GAME_CONFIG.KEYBOARD.LAYOUT] ?? GAME_CONFIG.KEYBOARD.CONTROLS.AZERTY;
+    const fwd = inputMap[ctrl.FORWARD]  || inputMap['arrowup'];
+    const bwd = inputMap[ctrl.BACKWARD] || inputMap['arrowdown'];
+    const lft = inputMap[ctrl.LEFT]     || inputMap['arrowleft'];
+    const rgt = inputMap[ctrl.RIGHT]    || inputMap['arrowright'];
 
     const inputsLocked = !raceStarted || raceFinished;
 
@@ -697,9 +912,37 @@ export async function startTronScene() {
     plateLight.position.y = moto.position.y + 0.6;
     plateLight.position.z = moto.position.z + Math.cos(motoYaw) * 1.5;
 
+    // ── Player trail wall creation ──
+    const wantTrail = inputMap[' '] && raceStarted && !raceFinished && Math.abs(motoSpeed) > 0.1;
+    if (wantTrail !== playerTrailActive) {
+      playerTrailActive = wantTrail;
+      hud.setTrailActive(playerTrailActive);
+      if (!wantTrail) playerTrailPrevPos = null;
+    }
+    if (playerTrailActive) {
+      const curPos = moto.position.clone();
+      if (playerTrailPrevPos) {
+        const dx = curPos.x - playerTrailPrevPos.x;
+        const dz = curPos.z - playerTrailPrevPos.z;
+        if (dx * dx + dz * dz >= TRAIL_SEGMENT_DIST * TRAIL_SEGMENT_DIST) {
+          createTrailSegment(playerTrailPrevPos, curPos, 'player');
+          playerTrailPrevPos = curPos;
+        }
+      } else {
+        playerTrailPrevPos = curPos;
+      }
+    }
+
+    // ── Player collision check with trails ──
+    if (raceStarted && !raceFinished && playerDeadUntil <= 0) {
+      if (checkTrailCollision(moto.position.x, moto.position.y, moto.position.z, 'player')) {
+        killPlayer(now);
+      }
+    }
+
     const speedAbs = Math.abs(motoSpeed);
-    const t = Math.max(0, Math.min(1, (speedAbs - TRAIL_SPEED_MIN) / (TRAIL_SPEED_MAX - TRAIL_SPEED_MIN)));
-    trail.emitRate = t * TRAIL_MAX_RATE;
+    const trailRate = Math.max(0, Math.min(1, (speedAbs - TRAIL_SPEED_MIN) / (TRAIL_SPEED_MAX - TRAIL_SPEED_MIN)));
+    trail.emitRate = trailRate * TRAIL_MAX_RATE;
 
     const desiredCamX = moto.position.x + fwdX * CAM.DIST;
     const desiredCamY = moto.position.y + CAM.HEIGHT;
@@ -729,7 +972,7 @@ export async function startTronScene() {
     }
 
     // Détection de checkpoint
-    if (raceStarted && !raceFinished) {
+    if (raceStarted && !raceFinished && playerDeadUntil <= 0) {
       const r2 = RACE.CHECKPOINT_RADIUS * RACE.CHECKPOINT_RADIUS;
       const mx = moto.position.x;
       const mz = moto.position.z;
@@ -740,7 +983,8 @@ export async function startTronScene() {
         const dx = mx - cp.x, dz = mz - cp.z;
         if (dx * dx + dz * dz < r2) {
           visitedCps.add(i);
-          showRaceToast(`CHECKPOINT  ${visitedCps.size} / ${TOTAL_INTER}`, 1800);
+          playerLastCheckpoint = new Vector3(cp.x, cp.y, cp.z);
+          showRaceToast(t('toast.checkpoint', { n: visitedCps.size, total: TOTAL_INTER }), 1800);
           refreshCheckpointVisuals();
         }
       }
@@ -760,8 +1004,8 @@ export async function startTronScene() {
             const isVictory = !aiRacers.some(ai => ai.finished);
             hud.showFinish(tNow - raceStartTime, bestLapMs, isVictory, quitSimulation);
             const resultMsg = isVictory
-              ? `VICTOIRE ! MEILLEUR TOUR : ${fmtMs(bestLapMs)}`
-              : `DÉFAITE — Une IA vous a devancé`;
+              ? t('toast.victory', { time: fmtMs(bestLapMs) })
+              : t('toast.defeat');
             showRaceToast(resultMsg, 7000);
           } else {
             currentLap++;
@@ -769,7 +1013,7 @@ export async function startTronScene() {
             hud.setLap(currentLap, RACE.LAPS);
             hud.setBestLap(bestLapMs);
             showRaceToast(
-              `TOUR ${currentLap - 1} — ${fmtMs(lapMs)}${isNewBest ? ' ★ MEILLEUR TOUR' : ''}`,
+              t('toast.lap', { n: currentLap - 1, time: fmtMs(lapMs), best: isNewBest ? t('toast.best_lap') : '' }),
               3500,
             );
           }
@@ -782,6 +1026,14 @@ export async function startTronScene() {
       const r2        = RACE.CHECKPOINT_RADIUS * RACE.CHECKPOINT_RADIUS;
       const aisFrozen = performance.now() < aiFreezedUntil;
       for (const ai of aiRacers) {
+        // ── AI death / respawn ──
+        if (ai.deadUntil > 0) {
+          if (now >= ai.deadUntil) {
+            respawnAI(ai);
+          }
+          continue;
+        }
+
         if (ai.finished || aisFrozen) continue;
 
         let targetX, targetZ, targetSpeed;
@@ -839,6 +1091,74 @@ export async function startTronScene() {
         if (ai.root.position.y < MOTO.MIN_HEIGHT) ai.root.position.y = MOTO.MIN_HEIGHT;
 
         ai.root.rotation.y = ai.yaw + AI_VISUAL_OFFSET;
+
+        // ── AI trail logic — strategic activation ──
+        const aiOwner = `ai-${AI_PROFILES.indexOf(ai.profile)}`;
+
+        // Check if AI should START a trail
+        if (!ai.trailActive && now > ai.trailCooldown && !raceFinished) {
+          // Is the AI ahead of the player? (compare path progress)
+          const aiProg  = savedPath ? ai.pathIndex / Math.max(1, savedPath.length) : 0;
+          const plProg  = savedPath ? (findNearestForward(savedPath, 0, moto.position)) / Math.max(1, savedPath.length) : 0;
+          const aiAhead = ai.lap > currentLap || (ai.lap === currentLap && aiProg > plProg);
+
+          // Distance to player
+          const dpx = ai.root.position.x - moto.position.x;
+          const dpz = ai.root.position.z - moto.position.z;
+          const distToPlayer = Math.sqrt(dpx * dpx + dpz * dpz);
+
+          if (aiAhead && distToPlayer < AI_TRAIL_DETECT_DIST && Math.random() < AI_TRAIL_CHANCE) {
+            ai.trailActive = true;
+            const duration = AI_TRAIL_DURATION_MIN + Math.random() * (AI_TRAIL_DURATION_MAX - AI_TRAIL_DURATION_MIN);
+            ai.trailActiveUntil = now + duration;
+            ai.trailPrevPos = ai.root.position.clone();
+          }
+        }
+
+        // Deactivate AI trail when duration expires
+        if (ai.trailActive && now >= ai.trailActiveUntil) {
+          ai.trailActive = false;
+          ai.trailPrevPos = null;
+          ai.trailCooldown = now + AI_TRAIL_COOLDOWN;
+        }
+
+        // Create trail segments for AI
+        if (ai.trailActive && ai.speed > 0.1) {
+          const curPos = ai.root.position.clone();
+          if (ai.trailPrevPos) {
+            const tdx = curPos.x - ai.trailPrevPos.x;
+            const tdz = curPos.z - ai.trailPrevPos.z;
+            if (tdx * tdx + tdz * tdz >= TRAIL_SEGMENT_DIST * TRAIL_SEGMENT_DIST) {
+              createTrailSegment(ai.trailPrevPos, curPos, aiOwner);
+              ai.trailPrevPos = curPos;
+            }
+          } else {
+            ai.trailPrevPos = curPos;
+          }
+        }
+
+        // ── AI collision check with trails ──
+        if (!raceFinished) {
+          if (checkTrailCollision(ai.root.position.x, ai.root.position.y, ai.root.position.z, aiOwner)) {
+            killAI(ai, now);
+          }
+        }
+      }
+    }
+
+    // ── Trail expiration & fade ──
+    for (let i = lightTrails.length - 1; i >= 0; i--) {
+      const trail_seg = lightTrails[i];
+      const age = now - trail_seg.createdAt;
+      if (age > TRAIL_LIFETIME_MS + TRAIL_FADE_MS) {
+        // Fully expired — dispose
+        trail_seg.mesh.dispose();
+        lightTrails.splice(i, 1);
+      } else if (age > TRAIL_LIFETIME_MS) {
+        // Fading out
+        const fadeProgress = (age - TRAIL_LIFETIME_MS) / TRAIL_FADE_MS;
+        trail_seg.mesh.material = trail_seg.mesh.material; // keep ref
+        trail_seg.mesh.visibility = 1.0 - fadeProgress;
       }
     }
 
@@ -851,7 +1171,7 @@ export async function startTronScene() {
         ? Infinity
         : (currentLap - 1 + visitedCps.size / Math.max(1, TOTAL_INTER)) / RACE.LAPS;
       const standings = [
-        { label: 'VOUS', score: playerProg, finished: raceFinished },
+        { label: '__YOU__', score: playerProg, finished: raceFinished },
         ...aiRacers.map(ai => {
           const lapProg = savedPath
             ? ai.pathIndex / Math.max(1, savedPath.length)
@@ -906,9 +1226,9 @@ export async function startTronScene() {
   // 20. Direction roue avant + roll roues
   scene.onAfterAnimationsObservable.add(() => {
     if (scene.metadata?.paused) return;
-    const kb  = GAME_CONFIG.KEYBOARD.CONTROLS[GAME_CONFIG.KEYBOARD.LAYOUT] ?? GAME_CONFIG.KEYBOARD.CONTROLS.AZERTY;
-    const lft = inputMap[kb.LEFT]  || inputMap['arrowleft'];
-    const rgt = inputMap[kb.RIGHT] || inputMap['arrowright'];
+    const ctrl = GAME_CONFIG.KEYBOARD.CONTROLS[GAME_CONFIG.KEYBOARD.LAYOUT] ?? GAME_CONFIG.KEYBOARD.CONTROLS.AZERTY;
+    const lft = inputMap[ctrl.LEFT]  || inputMap['arrowleft'];
+    const rgt = inputMap[ctrl.RIGHT] || inputMap['arrowright'];
     const dt  = scene.getEngine().getDeltaTime() / 1000;
 
     const targetSteer = lft ? -0.35 : rgt ? 0.35 : 0;
@@ -946,7 +1266,10 @@ export async function startTronScene() {
     engine,
     camera,
     onQuit: () => quitSimulation(),
+    onQualityChange: applyQuality,
   });
+  // Re-apply layout now that pauseButton has loaded the saved value from localStorage
+  hud.setLayout(GAME_CONFIG.KEYBOARD.LAYOUT);
 
   // Musique de fond — volume piloté par le slider des réglages
   const bgMusic = new Audio('/extragame/music.mp3');
@@ -960,11 +1283,16 @@ export async function startTronScene() {
     if (aiOpen) closeAI();
     if (aiBadgeInterval) clearInterval(aiBadgeInterval);
     aiBadge.remove();
+    // Dispose all light trail segments
+    for (const t of lightTrails) t.mesh.dispose();
+    lightTrails.length = 0;
+    trailMatPlayer.dispose();
+    trailMatAI.dispose();
     window.removeEventListener('resize', resizeHandler);
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
     engine.stopRenderLoop();
-    hud.remove();
+    hud.dispose();
     pause.dispose();
     trail.dispose();
     aiMeshResults.forEach(res => res.meshes.forEach(m => m.dispose()));
@@ -982,10 +1310,12 @@ export async function startTronScene() {
   });
 
   return () => {
-    showCutscene(RACE.LAPS, RACE.COUNTDOWN_MS, () => {
-      raceStarted   = true;
-      raceStartTime = performance.now();
-      lapStartTime  = raceStartTime;
+    showBriefing(RACE.LAPS, () => {
+      showCutscene(RACE.LAPS, RACE.COUNTDOWN_MS, () => {
+        raceStarted   = true;
+        raceStartTime = performance.now();
+        lapStartTime  = raceStartTime;
+      });
     });
   };
 }

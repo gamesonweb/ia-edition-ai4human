@@ -5,7 +5,8 @@ const ACTIVE_COUNT       = 3    // chunks principaux rendus
 const PRELOAD_COUNT      = 2    // chunks pré-rendus en avance (seul le rang 5 est caché)
 const UPDATE_INTERVAL_MS = 200
 
-let lastUpdate = 0
+let lastUpdate    = 0
+let cullingPaused = false
 
 /**
  * Enregistre un chunk avec ses meshes actifs et son centre monde.
@@ -28,6 +29,7 @@ export function registerMapChunk(name, meshes, center) {
  * @param {boolean} [force]
  */
 export function updateMapChunks(playerPosition, force = false) {
+  if (cullingPaused) return
   const now = performance.now()
   if (!force && now - lastUpdate < UPDATE_INTERVAL_MS) return
   lastUpdate = now
@@ -64,6 +66,25 @@ export function attachChunkLoop(scene, getPlayerPosition) {
     const pos = getPlayerPosition()
     if (pos) updateMapChunks(pos)
   })
+}
+
+/** Active tous les chunks pendant une cutscene. */
+export function showAllMapChunks() {
+  cullingPaused = true
+  for (const chunk of chunks) {
+    if (chunk.enabled) continue
+    chunk.enabled = true
+    for (const mesh of chunk.meshes) {
+      mesh.isVisible = true
+      if (mesh.metadata) mesh.metadata.chunkHidden = false
+    }
+  }
+}
+
+/** Reprend le culling normal après la cutscene. */
+export function resumeChunkCulling() {
+  cullingPaused = false
+  lastUpdate = 0
 }
 
 export function clearMapChunks() {

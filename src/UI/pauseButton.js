@@ -9,10 +9,17 @@ const STORAGE = {
   QUALITY:  'babylon-akira:quality',
 }
 
-export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
-  const savedVolume   = parseFloat(localStorage.getItem(STORAGE.VOLUME)  ?? '40')
+export const setupPauseButton = (scene, {
+  engine, camera, onQuit, onQualityChange,
+} = {}) => {
+  const savedVolume   = parseFloat(localStorage.getItem(STORAGE.VOLUME)  ?? '100')
   const savedKeyboard = localStorage.getItem(STORAGE.KEYBOARD) ?? 'AZERTY'
-  const savedQuality  = localStorage.getItem(STORAGE.QUALITY)  ?? 'quality'
+  const _rawQuality   = localStorage.getItem(STORAGE.QUALITY) ?? 'mid'
+  // Migration des anciennes valeurs 'quality'/'performance'
+  const savedQuality  = _rawQuality === 'quality' ? 'high'
+                      : _rawQuality === 'performance' ? 'low'
+                      : ['low', 'mid', 'high', 'extra'].includes(_rawQuality) ? _rawQuality
+                      : 'mid'
 
   GAME_CONFIG.KEYBOARD.LAYOUT = savedKeyboard
 
@@ -25,7 +32,7 @@ export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
       fxaaProcess = null
     }
   }
-  setFxaa(savedQuality === 'quality')
+  setFxaa(savedQuality === 'high' || savedQuality === 'extra')
 
   let audioEl = null
   const setAudio = (bgm) => {
@@ -81,10 +88,13 @@ export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
       <div class="settings-section">
         <div class="settings-label"><i class="fa-solid fa-display"></i> Rendu</div>
         <div class="settings-toggle" id="s-quality">
-          <button class="toggle-btn ${savedQuality === 'quality' ? 'active' : ''}" data-value="quality">Qualité</button>
-          <button class="toggle-btn ${savedQuality === 'performance' ? 'active' : ''}" data-value="performance">Performance</button>
+          <button class="toggle-btn ${savedQuality === 'low'   ? 'active' : ''}" data-value="low">LOW</button>
+          <button class="toggle-btn ${savedQuality === 'mid'   ? 'active' : ''}" data-value="mid">MID</button>
+          <button class="toggle-btn ${savedQuality === 'high'  ? 'active' : ''}" data-value="high">HIGH</button>
+          <button class="toggle-btn ${savedQuality === 'extra' ? 'active' : ''}" data-value="extra">EXTRA</button>
         </div>
       </div>
+
     </div>
   `
   document.body.appendChild(overlay)
@@ -100,7 +110,6 @@ export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
   const volVal        = overlay.querySelector('#s-volume-val')
   const keyboardGrp   = overlay.querySelector('#s-keyboard')
   const qualityGrp    = overlay.querySelector('#s-quality')
-
   const showSettings = (v) => {
     mainPanel.classList.toggle('hidden', v)
     settingsPanel.classList.toggle('visible', v)
@@ -130,7 +139,8 @@ export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
     if (!t) return
     qualityGrp.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'))
     t.classList.add('active')
-    setFxaa(t.dataset.value === 'quality')
+    setFxaa(t.dataset.value === 'high' || t.dataset.value === 'extra')
+    onQualityChange?.(t.dataset.value)
     try { localStorage.setItem(STORAGE.QUALITY, t.dataset.value) } catch {}
   })
 
@@ -171,6 +181,8 @@ export const setupPauseButton = (scene, { engine, camera, onQuit } = {}) => {
     }
   }
   window.addEventListener('keydown', onKey)
+
+  onQualityChange?.(savedQuality)
 
   return {
     element: btn,

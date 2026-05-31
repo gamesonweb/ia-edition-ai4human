@@ -5,63 +5,92 @@ export function fmtMs(ms) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
 }
 
-export function showRaceToast(msg, duration = 2500) {
-  let el = document.getElementById('tron-race-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'tron-race-toast';
-    Object.assign(el.style, {
-      position:       'fixed',
-      top:            '18%',
-      left:           '50%',
-      transform:      'translateX(-50%)',
-      background:     'rgba(0, 20, 40, 0.88)',
-      color:          '#ff00cc',
-      fontFamily:     'monospace',
-      fontSize:       '18px',
-      fontWeight:     'bold',
-      letterSpacing:  '2px',
-      padding:        '10px 28px',
-      border:         '1px solid #ff00cc',
-      borderRadius:   '4px',
-      zIndex:         '9999',
-      pointerEvents:  'none',
-      textAlign:      'center',
-      transition:     'opacity 0.3s',
-    });
-    document.body.appendChild(el);
+const TOAST_TYPES = {
+  danger:     { color: '#ff1a1a', icon: 'fa-solid fa-skull' },
+  success:    { color: '#00ff88', icon: 'fa-solid fa-circle-check' },
+  checkpoint: { color: '#cc44ff', icon: 'fa-solid fa-flag-checkered' },
+  lap:        { color: '#ffcc00', icon: 'fa-solid fa-stopwatch' },
+  record:     { color: '#ff8c00', icon: 'fa-solid fa-circle-dot' },
+  info:       { color: '#00f0ff', icon: 'fa-solid fa-chevron-right' },
+}
+
+function detectType(msg) {
+  const m = msg.toUpperCase()
+  if (m.includes('ÉLIMINÉ') || m.includes('DÉFAITE') || m.includes('TROP COURT') || m.includes('ANNULÉ')) return 'danger'
+  if (m.includes('VICTOIRE') || m.includes('RESPAWN') || m.includes('SAUVEGARDÉ') || m.startsWith('✓')) return 'success'
+  if (m.includes('CHECKPOINT')) return 'checkpoint'
+  if (m.includes('TOUR ') || m.includes('MEILLEUR')) return 'lap'
+  if (m.startsWith('⏺')) return 'record'
+  return 'info'
+}
+
+// Toast container — unique, creates itself on first use
+function getContainer() {
+  let c = document.getElementById('tron-toast-container')
+  if (!c) {
+    c = document.createElement('div')
+    c.id = 'tron-toast-container'
+    document.body.appendChild(c)
   }
-  el.textContent = msg;
-  el.style.opacity = '1';
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, duration);
+  return c
+}
+
+export function showRaceToast(msg, duration = 2500) {
+  const container = getContainer()
+
+  // If a toast with the same message is already showing, reset its timer
+  for (const existing of container.children) {
+    if (existing.dataset.msg === msg) {
+      clearTimeout(existing._hideTimer)
+      existing._hideTimer = setTimeout(() => dismissToast(existing), duration)
+      existing.classList.remove('trt-exit')
+      void existing.offsetWidth
+      existing.classList.add('trt-bounce')
+      setTimeout(() => existing.classList.remove('trt-bounce'), 400)
+      return
+    }
+  }
+
+  const type  = detectType(msg)
+  const meta  = TOAST_TYPES[type]
+  const toast = document.createElement('div')
+  toast.className  = 'trt'
+  toast.dataset.type = type
+  toast.dataset.msg  = msg
+  toast.innerHTML = `
+    <span class="trt-accent"></span>
+    <span class="trt-icon"><i class="${meta.icon}"></i></span>
+    <span class="trt-text">${msg}</span>
+  `
+  toast.style.setProperty('--trt-color', meta.color)
+
+  container.appendChild(toast)
+  requestAnimationFrame(() => toast.classList.add('trt-show'))
+
+  toast._hideTimer = setTimeout(() => dismissToast(toast), duration)
+}
+
+function dismissToast(toast) {
+  if (!toast.isConnected) return
+  toast.classList.add('trt-exit')
+  toast.addEventListener('animationend', () => toast.remove(), { once: true })
+  // Fallback if animationend doesn't fire
+  setTimeout(() => toast.remove(), 600)
 }
 
 export function showCoordsToast(msg) {
-  let el = document.getElementById('tron-coords-toast');
+  let el = document.getElementById('tron-coords-toast')
   if (!el) {
-    el = document.createElement('div');
-    el.id = 'tron-coords-toast';
-    Object.assign(el.style, {
-      position:      'fixed',
-      bottom:        '80px',
-      left:          '50%',
-      transform:     'translateX(-50%)',
-      background:    'rgba(0,20,40,0.85)',
-      color:         '#00eeff',
-      fontFamily:    'monospace',
-      fontSize:      '14px',
-      padding:       '6px 16px',
-      border:        '1px solid #00eeff',
-      borderRadius:  '4px',
-      zIndex:        '9999',
-      pointerEvents: 'none',
-      letterSpacing: '1px',
-    });
-    document.body.appendChild(el);
+    el = document.createElement('div')
+    el.id = 'tron-coords-toast'
+    document.body.appendChild(el)
   }
-  el.textContent = msg;
-  el.style.opacity = '1';
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+  el.textContent = msg
+  el.classList.remove('tct-hide')
+  el.classList.add('tct-show')
+  clearTimeout(el._hideTimer)
+  el._hideTimer = setTimeout(() => {
+    el.classList.remove('tct-show')
+    el.classList.add('tct-hide')
+  }, 3000)
 }

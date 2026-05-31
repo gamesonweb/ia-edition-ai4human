@@ -1,5 +1,7 @@
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import './mainMenu.css'
+import { t } from '../minigame/tron/i18n.js'
+import { GAME_CONFIG } from '../config/gameConfig.js'
 
 import { Engine }            from '@babylonjs/core/Engines/engine'
 import { Scene }             from '@babylonjs/core/scene'
@@ -18,29 +20,8 @@ const TEAM = [
 ]
 
 const CHARACTERS = [
-  {
-    id: 'George',
-    name: 'George',
-    tagline: 'Agile · réflexe rapide',
-    initial: 'G',
-  },
-  {
-    id: 'stephane',
-    name: 'Stephane',
-    tagline: 'Robuste · stratégique',
-    initial: 'S',
-  },
-]
-
-const GAME_TIPS = [
-  'Appuyez sur M pour ouvrir la carte de navigation complète.',
-  'Hackez les terminaux IA pour neutraliser les ennemis à distance.',
-  'Votre bouclier se régénère automatiquement hors de tout combat.',
-  'Restez dans les zones sombres pour réduire votre visibilité ennemie.',
-  'Les drones IA ont un angle mort dans leur dos — exploitez-le.',
-  'Combinez hacking et discrétion pour traverser les zones hostiles sans alerte.',
-  'Les données collectées augmentent votre score de mission finale.',
-  'Gardez un œil sur votre jauge de détection : fuir vaut mieux que combattre.',
+  { id: 'George',   name: 'George',   tagKey: 'mm.char_george_tag',   initial: 'G' },
+  { id: 'stephane', name: 'Stephane', tagKey: 'mm.char_stephane_tag', initial: 'S' },
 ]
 
 export function showMainMenu({ onPlay, onPlayExtra } = {}) {
@@ -49,10 +30,17 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
   const container = document.createElement('div')
   container.id = 'main-menu'
 
+  const _spKb      = localStorage.getItem('babylon-akira:keyboard') ?? 'AZERTY'
+  const _spQuality = localStorage.getItem('babylon-akira:quality')  ?? 'mid'
+
   container.innerHTML = `
     <canvas class="mm-neural"></canvas>
     <div class="mm-aurora"></div>
     <div class="mm-vignette"></div>
+    <div class="mm-hero-expand" aria-hidden="true"></div>
+    <div class="mm-hero-expand mm-hero-expand-bonus" aria-hidden="true"></div>
+    <div class="mm-hero-expand mm-hero-expand-credits" aria-hidden="true"></div>
+    <div class="mm-hero-expand mm-hero-expand-bts" aria-hidden="true"></div>
 
     <div class="mm-layout">
       <div class="mm-left">
@@ -69,10 +57,8 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                 <h1 class="mm-title">
                   BLACK<span class="mm-title-accent">O</span>UT
                 </h1>
-                <div class="mm-tag">Artificial Intelligence Edition</div>
-                <div class="mm-subtitle">
-                  L'IA a pris notre monde. Le virus a pris l'IA. Vous avez pris votre décision.
-                </div>
+                <div class="mm-tag" data-i18n="mm.tag">${t('mm.tag')}</div>
+                <div class="mm-subtitle" data-i18n="mm.subtitle">${t('mm.subtitle')}</div>
               </div>
 
               <div class="mm-actions">
@@ -86,7 +72,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                 </button>
                 <button class="mm-btn" type="button" data-action="credits">
                   <i class="fa-solid fa-users"></i>
-                  <span>Crédits</span>
+                  <span data-i18n="mm.btn_credits">${t('mm.btn_credits')}</span>
                 </button>
                 <button class="mm-btn bts-btn" type="button" data-action="bts">
                   <i class="fa-solid fa-clapperboard"></i>
@@ -98,17 +84,63 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
             </div>
           </section>
 
+          <section class="mm-page mm-page-moto">
+            <div class="mm-content">
+              <div class="mm-brand">
+                <div class="mm-pretitle">
+                  <span class="mm-dot"></span>
+                  <span data-i18n="mm.moto_pre">${t('mm.moto_pre')}</span>
+                </div>
+                <h2 class="mm-step-title" data-i18n="mm.moto_title">${t('mm.moto_title')}</h2>
+                <div class="mm-subtitle" data-i18n="mm.moto_sub">${t('mm.moto_sub')}</div>
+              </div>
+
+              <div class="mm-actions">
+                <button class="mm-btn primary" type="button" data-action="moto-launch">
+                  <i class="fa-solid fa-play"></i>
+                  <span data-i18n="mm.moto_launch">${t('mm.moto_launch')}</span>
+                </button>
+                <button class="mm-btn" type="button" data-action="moto-back">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span data-i18n="mm.btn_back">${t('mm.btn_back')}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="mm-page mm-page-plate">
+            <div class="mm-content">
+              <div class="mm-brand">
+                <div class="mm-pretitle">
+                  <span class="mm-dot"></span>
+                  <span data-i18n="mm.plate_pre">${t('mm.plate_pre')}</span>
+                </div>
+                <h2 class="mm-step-title" data-i18n="mm.plate_title">${t('mm.plate_title')}</h2>
+                <div class="mm-subtitle" data-i18n="mm.plate_sub">${t('mm.plate_sub')}</div>
+              </div>
+
+              <div class="mm-actions">
+                <button class="mm-btn primary" type="button" data-action="plate-launch">
+                  <i class="fa-solid fa-flag-checkered"></i>
+                  <span data-i18n="mm.plate_launch">${t('mm.plate_launch')}</span>
+                </button>
+                <button class="mm-btn" type="button" data-action="plate-back">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span data-i18n="mm.btn_back">${t('mm.btn_back')}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section class="mm-page mm-page-name">
             <div class="mm-content">
               <div class="mm-brand">
                 <div class="mm-pretitle">
                   <span class="mm-dot"></span>
-                  <span>Step 01 / 02 · Identification</span>
+                  <span data-i18n="mm.step1_pre">${t('mm.step1_pre')}</span>
                 </div>
-                <h2 class="mm-step-title">Quel est ton nom ?</h2>
-                <div class="mm-subtitle">
-                  Le réseau a besoin d'un identifiant pour t'enregistrer dans la grille.
-                </div>
+                <h2 class="mm-step-title" data-i18n="mm.step1_title">${t('mm.step1_title')}</h2>
+                <div class="mm-subtitle" data-i18n="mm.step1_sub">${t('mm.step1_sub')}</div>
               </div>
 
               <form class="mm-form" data-form="name">
@@ -118,7 +150,8 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                     type="text"
                     name="player-name"
                     class="mm-input"
-                    placeholder="ton_nom"
+                    data-i18n-placeholder="mm.name_ph"
+                    placeholder="${t('mm.name_ph')}"
                     autocomplete="off"
                     maxlength="20"
                     required
@@ -129,11 +162,11 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                 <div class="mm-actions">
                   <button class="mm-btn primary" type="submit" data-action="name-next">
                     <i class="fa-solid fa-arrow-right"></i>
-                    <span>Suivant</span>
+                    <span data-i18n="mm.btn_next">${t('mm.btn_next')}</span>
                   </button>
                   <button class="mm-btn" type="button" data-action="name-back">
                     <i class="fa-solid fa-arrow-left"></i>
-                    <span>Retour</span>
+                    <span data-i18n="mm.btn_back">${t('mm.btn_back')}</span>
                   </button>
                 </div>
               </form>
@@ -145,12 +178,10 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
               <div class="mm-brand">
                 <div class="mm-pretitle">
                   <span class="mm-dot"></span>
-                  <span>Step 02 / 02 · Avatar</span>
+                  <span data-i18n="mm.step2_pre">${t('mm.step2_pre')}</span>
                 </div>
-                <h2 class="mm-step-title">Choisis ton personnage</h2>
-                <div class="mm-subtitle">
-                  Sélectionne l'avatar qui rejoindra la simulation.
-                </div>
+                <h2 class="mm-step-title" data-i18n="mm.step2_title">${t('mm.step2_title')}</h2>
+                <div class="mm-subtitle" data-i18n="mm.step2_sub">${t('mm.step2_sub')}</div>
               </div>
 
               <div class="mm-char-grid">
@@ -162,7 +193,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                     style="--i:${i}">
                     <div class="mm-char-info">
                       <div class="mm-char-name">${c.name}</div>
-                      <div class="mm-char-tag">${c.tagline}</div>
+                      <div class="mm-char-tag" data-i18n="${c.tagKey}">${t(c.tagKey)}</div>
                     </div>
                     <i class="fa-solid fa-check mm-char-check"></i>
                   </button>
@@ -172,11 +203,11 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
               <div class="mm-actions">
                 <button class="mm-btn primary" type="button" data-action="launch" disabled>
                   <i class="fa-solid fa-play"></i>
-                  <span class="mm-btn-label">Lancer la partie</span>
+                  <span class="mm-btn-label" data-i18n="mm.btn_launch">${t('mm.btn_launch')}</span>
                 </button>
                 <button class="mm-btn" type="button" data-action="char-back">
                   <i class="fa-solid fa-arrow-left"></i>
-                  <span>Retour</span>
+                  <span data-i18n="mm.btn_back">${t('mm.btn_back')}</span>
                 </button>
               </div>
               <div class="mm-form-error" data-launch-error></div>
@@ -188,11 +219,9 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
               <div class="mm-credits-head">
                 <button class="mm-btn mm-back-btn" type="button" data-action="back">
                   <i class="fa-solid fa-arrow-left"></i>
-                  <span>Retour</span>
+                  <span data-i18n="mm.btn_back">${t('mm.btn_back')}</span>
                 </button>
-                <div class="mm-credits-title">
-                  Équipe
-                </div>
+                <div class="mm-credits-title" data-i18n="mm.credits_title">${t('mm.credits_title')}</div>
               </div>
 
               <div class="mm-team">
@@ -230,9 +259,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
                 `).join('')}
               </div>
 
-              <div class="mm-credits-foot">
-                Powered by Babylon.js 9 · Icons by Font Awesome · Inspired by Akira (1988)
-              </div>
+              <div class="mm-credits-foot" data-i18n="mm.credits_foot">${t('mm.credits_foot')}</div>
             </div>
           </section>
         </div>
@@ -245,47 +272,81 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
       </div>
     </div>
 
+    <div class="mm-sp">
+      <div class="mm-sp-header">
+        <span class="mm-sp-title"><i class="fa-solid fa-gear"></i> <span data-i18n="mm.sp_title">${t('mm.sp_title')}</span></span>
+        <button class="mm-sp-close" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="mm-sp-section">
+        <div class="mm-sp-label"><i class="fa-solid fa-keyboard"></i> <span data-i18n="mm.sp_keyboard">${t('mm.sp_keyboard')}</span></div>
+        <div class="mm-sp-toggle" id="mm-sp-kb">
+          <button class="mm-sp-btn ${_spKb === 'AZERTY' ? 'active' : ''}" data-value="AZERTY">AZERTY</button>
+          <button class="mm-sp-btn ${_spKb === 'QWERTY' ? 'active' : ''}" data-value="QWERTY">QWERTY</button>
+        </div>
+      </div>
+      <div class="mm-sp-section">
+        <div class="mm-sp-label"><i class="fa-solid fa-display"></i> Graphisme</div>
+        <div class="mm-sp-toggle" id="mm-sp-quality">
+          <button class="mm-sp-btn ${_spQuality === 'low'   ? 'active' : ''}" data-value="low">LOW</button>
+          <button class="mm-sp-btn ${_spQuality === 'mid'   ? 'active' : ''}" data-value="mid">MID</button>
+          <button class="mm-sp-btn ${_spQuality === 'high'  ? 'active' : ''}" data-value="high">HIGH</button>
+          <button class="mm-sp-btn ${_spQuality === 'extra' ? 'active' : ''}" data-value="extra">EXTRA</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mm-settings-hint">
+      <button class="mm-sh-icon" type="button" data-i18n-aria="mm.sp_aria" aria-label="${t('mm.sp_aria')}">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+      <svg class="mm-sh-arrow" viewBox="0 0 82 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M74,19 C58,4 26,34 12,19"
+              stroke="rgba(255,255,255,0.52)"
+              stroke-width="1.5"
+              stroke-dasharray="5,3.5"
+              stroke-linecap="round"/>
+        <polygon points="10,19 18,14 18,24" fill="rgba(255,255,255,0.52)"/>
+      </svg>
+      <div class="mm-sh-label">Settings</div>
+    </div>
+
     <div class="mm-loader" aria-hidden="true">
-      <div class="mm-loader-layout">
+      <div class="mm-ldr-scan"></div>
+      <div class="mm-ldr-grid"></div>
 
-        <div class="mm-loader-left">
-          <div class="mm-loader-brand">
-            <div class="mm-pretitle">
-              <span class="mm-dot"></span>
-              <span>GameOnWeb 2026 · Chargement</span>
-            </div>
-            <div class="mm-loader-title">BLACK<span class="mm-title-accent">O</span>UT</div>
-            <div class="mm-tag">Artificial Intelligence Edition</div>
-          </div>
+      <div class="mm-ldr-corner mm-ldr-tl"></div>
+      <div class="mm-ldr-corner mm-ldr-tr"></div>
+      <div class="mm-ldr-corner mm-ldr-bl"></div>
+      <div class="mm-ldr-corner mm-ldr-br"></div>
 
-          <div class="mm-loader-center">
-            <div class="mm-loader-core">
-              <div class="mm-loader-ring outer"></div>
-              <div class="mm-loader-ring inner"></div>
-              <div class="mm-loader-dot"></div>
-            </div>
-            <div class="mm-loader-status" data-loader-status>Connexion à la grille</div>
-            <div class="mm-loader-sub" data-loader-sub>Authentification du nœud neural…</div>
-            <div class="mm-loader-progress">
-              <div class="mm-loader-bar" data-loader-bar></div>
-            </div>
-          </div>
+      <div class="mm-ldr-body">
+        <div class="mm-ldr-eyebrow" data-i18n="mm.ldr_eyebrow">
+          <span class="mm-ldr-dot"></span>
+          ${t('mm.ldr_eyebrow')}
+        </div>
 
-          <div class="mm-loader-tip">
-            <div class="mm-loader-tip-head">
-              <i class="fa-solid fa-microchip"></i>
-              <span>ASTUCE</span>
-            </div>
-            <p class="mm-loader-tip-body" data-loader-tip>…</p>
+        <div class="mm-ldr-title">BLACK<span>O</span>UT</div>
+        <div class="mm-ldr-edition">A·I &nbsp; RACING EDITION</div>
+
+        <div class="mm-ldr-divider"></div>
+
+        <div class="mm-ldr-terminal">
+          <span class="mm-ldr-prompt">&gt;</span>
+          <span data-loader-status>${t('mm.ldr_s1_status')}</span>
+          <span class="mm-ldr-cursor"></span>
+        </div>
+        <div class="mm-ldr-sub" data-loader-sub>${t('mm.ldr_s1_sub')}</div>
+
+        <div class="mm-ldr-progress-wrap">
+          <div class="mm-ldr-progress">
+            <div class="mm-ldr-bar" data-loader-bar></div>
           </div>
         </div>
 
-        <div class="mm-loader-right">
-          <div class="mm-poster"></div>
-          <div class="mm-poster-edge"></div>
-          <div class="mm-poster-line"></div>
+        <div class="mm-ldr-tip-line">
+          <i class="fa-solid fa-bolt"></i>
+          <span data-loader-tip>…</span>
         </div>
-
       </div>
     </div>
   `
@@ -295,11 +356,12 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
 
   const pages = {
     home:      container.querySelector('.mm-page-home'),
+    moto:      container.querySelector('.mm-page-moto'),
+    plate:     container.querySelector('.mm-page-plate'),
     name:      container.querySelector('.mm-page-name'),
     character: container.querySelector('.mm-page-character'),
     credits:   container.querySelector('.mm-page-credits'),
   }
-
   const stageNameEl = container.querySelector('.mm-stage-name')
   const stage = startStage(container.querySelector('.mm-stage'))
 
@@ -307,11 +369,24 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
     for (const [k, el] of Object.entries(pages)) {
       el.classList.toggle('is-active', k === key)
     }
-    container.classList.toggle('show-stage', key === 'character')
+    container.classList.toggle('show-stage', key === 'character' || key === 'moto' || key === 'plate')
     if (key === 'character') {
       const id = selectedCharacter ?? CHARACTERS[0].id
       stage.setCharacter(id)
       stageNameEl.textContent = CHARACTERS.find(c => c.id === id)?.name ?? ''
+    }
+    if (key === 'moto') {
+      if (pages.plate.classList.contains('is-active')) {
+        stage.backToMoto()
+      } else {
+        stage.setMoto()
+      }
+      stageNameEl.textContent = ''
+    }
+    if (key === 'plate') {
+      stage.zoomToPlate()
+      stageNameEl.textContent = ''
+      setTimeout(() => container.querySelector('input[name="plate"]')?.focus(), 1500)
     }
   }
 
@@ -323,16 +398,20 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
     goTo('name')
     setTimeout(() => container.querySelector('input[name="player-name"]')?.focus(), 350)
   })
-  playExtraBtn.addEventListener('click', async () => {
+  playExtraBtn.addEventListener('click', () => goTo('moto'))
+
+  // ---- Page moto ----
+  container.querySelector('[data-action="moto-back"]').addEventListener('click', () => goTo('home'))
+  container.querySelector('[data-action="moto-launch"]').addEventListener('click', () => goTo('plate'))
+
+  // ---- Page plaque ----
+  container.querySelector('[data-action="plate-back"]').addEventListener('click', () => goTo('moto'))
+
+  container.querySelector('[data-action="plate-launch"]').addEventListener('click', async () => {
     if (starting) return
     starting = true
-    playBtn.disabled = true
-    playExtraBtn.disabled = true
-    creditsBtn.disabled = true
 
-    // Libère le GPU du menu pendant le chargement du jeu
     safeStop(stage, 'stage')
-
     showLoader()
 
     let postLoad = null
@@ -341,9 +420,6 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
     } catch (err) {
       console.error('[mainMenu] échec du lancement Extra', err)
       hideLoader(true)
-      playBtn.disabled = false
-      playExtraBtn.disabled = false
-      creditsBtn.disabled = false
       starting = false
       return
     }
@@ -352,6 +428,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
     finish()
     postLoad?.()
   })
+
   creditsBtn.addEventListener('click', () => goTo('credits'))
   container.querySelector('[data-action="bts"]')
     .addEventListener('click', () => window.open('https://js-blackout-behind-the-scene-gow.vercel.app/', '_blank', 'noopener,noreferrer'))
@@ -373,7 +450,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
     e.preventDefault()
     const v = nameInput.value.trim()
     if (v.length < 2) {
-      nameError.textContent = 'Choisis un nom d\'au moins 2 caractères.'
+      nameError.textContent = t('mm.name_err')
       nameInput.focus()
       return
     }
@@ -398,7 +475,7 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
       selectedCharacter = btn.dataset.character
       const isLocked = LOCKED_CHARACTERS.includes(selectedCharacter)
       launchBtn.disabled = isLocked
-      launchLabel.textContent = isLocked ? 'Personnage verrouillé' : 'Lancer la partie'
+      launchLabel.textContent = isLocked ? t('mm.char_locked') : t('mm.btn_launch')
       stage.setCharacter(selectedCharacter)
       stageNameEl.textContent = CHARACTERS.find(c => c.id === selectedCharacter)?.name ?? ''
     })
@@ -407,9 +484,44 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
   container.querySelector('[data-action="char-back"]')
     .addEventListener('click', () => goTo('name'))
 
+  // ---- Settings panel ----
+  const settingsBtn   = container.querySelector('.mm-sh-icon')
+  const settingsPanel = container.querySelector('.mm-sp')
+  const spClose       = settingsPanel.querySelector('.mm-sp-close')
+
+  let spOpen = false
+  const closeSP  = () => { spOpen = false; settingsPanel.classList.remove('open') }
+  const toggleSP = () => { spOpen = !spOpen; settingsPanel.classList.toggle('open', spOpen) }
+
+  settingsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleSP() })
+  spClose    .addEventListener('click', (e) => { e.stopPropagation(); closeSP()  })
+  container  .addEventListener('click', (e) => {
+    if (spOpen && !settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) closeSP()
+  })
+
+  settingsPanel.querySelector('#mm-sp-kb').addEventListener('click', (e) => {
+    const btn = e.target.closest('.mm-sp-btn')
+    if (!btn) return
+    settingsPanel.querySelectorAll('#mm-sp-kb .mm-sp-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    GAME_CONFIG.KEYBOARD.LAYOUT = btn.dataset.value
+    try { localStorage.setItem('babylon-akira:keyboard', btn.dataset.value) } catch {}
+  })
+
+  settingsPanel.querySelector('#mm-sp-quality').addEventListener('click', (e) => {
+    const btn = e.target.closest('.mm-sp-btn')
+    if (!btn) return
+    settingsPanel.querySelectorAll('#mm-sp-quality .mm-sp-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    try { localStorage.setItem('babylon-akira:quality', btn.dataset.value) } catch {}
+  })
+
   // ---- Escape ----
   const onKey = (e) => {
     if (e.key !== 'Escape') return
+    if (spOpen) { closeSP(); return }
+    if (pages.plate    .classList.contains('is-active')) { goTo('moto'); return }
+    if (pages.moto     .classList.contains('is-active')) { goTo('home'); return }
     if (pages.credits  .classList.contains('is-active')) goTo('home')
     if (pages.name     .classList.contains('is-active')) goTo('home')
     if (pages.character.classList.contains('is-active')) goTo('name')
@@ -433,47 +545,65 @@ export function showMainMenu({ onPlay, onPlayExtra } = {}) {
   // ---- Loader plein écran ----
   const loaderStatusEl = container.querySelector('[data-loader-status]')
   const loaderSubEl    = container.querySelector('[data-loader-sub]')
-  const LOADER_STEPS = [
-    { status: 'Connexion à la grille',       sub: 'Authentification du nœud neural…' },
-    { status: 'Chargement du monde',         sub: 'Streaming des chunks de la carte…' },
-    { status: 'Initialisation de l\'IA',     sub: 'Réveil des modèles d\'inférence…' },
-    { status: 'Compilation des shaders',     sub: 'Optimisation GPU en cours…' },
-    { status: 'Liaison de l\'avatar',        sub: 'Synchronisation synaptique…' },
-    { status: 'Démarrage de la simulation',  sub: 'Préparation du protocole…' },
+  const getLoaderSteps = () => [
+    { status: t('mm.ldr_s1_status'), sub: t('mm.ldr_s1_sub') },
+    { status: t('mm.ldr_s2_status'), sub: t('mm.ldr_s2_sub') },
+    { status: t('mm.ldr_s3_status'), sub: t('mm.ldr_s3_sub') },
+    { status: t('mm.ldr_s4_status'), sub: t('mm.ldr_s4_sub') },
+    { status: t('mm.ldr_s5_status'), sub: t('mm.ldr_s5_sub') },
+    { status: t('mm.ldr_s6_status'), sub: t('mm.ldr_s6_sub') },
   ]
   let loaderTimer     = 0
   let loaderStartTime = 0
 
+  const showCurtain = () => {
+    const curtain = document.createElement('div')
+    curtain.className = 'mm-curtain'
+    document.body.appendChild(curtain)
+    requestAnimationFrame(() => curtain.classList.add('mm-curtain-go'))
+    setTimeout(() => {
+      curtain.classList.add('mm-curtain-out')
+      setTimeout(() => curtain.remove(), 420)
+    }, 560)
+  }
+
   const showLoader = () => {
     loaderStartTime = Date.now()
-    container.classList.add('is-loading')
+    showCurtain()
 
     const tipEl = container.querySelector('[data-loader-tip]')
-    if (tipEl) tipEl.textContent = GAME_TIPS[Math.floor(Math.random() * GAME_TIPS.length)]
+    const tips = Array.from({ length: 8 }, (_, i) => t(`mm.tip${i + 1}`))
+    if (tipEl) tipEl.textContent = tips[Math.floor(Math.random() * tips.length)]
 
-    const barEl = container.querySelector('[data-loader-bar]')
-    if (barEl) {
-      barEl.style.transition = 'none'
-      barEl.style.width = '0%'
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        barEl.style.transition = 'width 5.5s cubic-bezier(0.05, 0.85, 0.3, 1)'
-        barEl.style.width = '82%'
-      }))
-    }
+    setTimeout(() => {
+      container.classList.add('is-loading')
 
-    let i = 0
-    const apply = () => {
-      const s = LOADER_STEPS[i % LOADER_STEPS.length]
-      if (loaderStatusEl) loaderStatusEl.textContent = s.status
-      if (loaderSubEl)    loaderSubEl   .textContent = s.sub
-      i++
-    }
-    apply()
-    loaderTimer = window.setInterval(apply, 1700)
+      const barEl = container.querySelector('[data-loader-bar]')
+      if (barEl) {
+        barEl.style.transition = 'none'
+        barEl.style.width = '0%'
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          barEl.style.transition = 'width 5.5s cubic-bezier(0.05, 0.85, 0.3, 1)'
+          barEl.style.width = '82%'
+        }))
+      }
+
+      let i = 0
+      const steps = getLoaderSteps()
+      const apply = () => {
+        const s = steps[i % steps.length]
+        if (loaderStatusEl) loaderStatusEl.textContent = s.status
+        if (loaderSubEl)    loaderSubEl   .textContent = s.sub
+        i++
+      }
+      apply()
+      loaderTimer = window.setInterval(apply, 1700)
+    }, 230)
   }
 
   const hideLoader = (immediate = false) => {
     if (loaderTimer) { clearInterval(loaderTimer); loaderTimer = 0 }
+    document.querySelectorAll('.mm-curtain').forEach(el => el.remove())
     if (immediate) {
       container.classList.remove('is-loading')
       return Promise.resolve()
@@ -712,9 +842,52 @@ function startStage(canvas) {
   const key = new DirectionalLight('mm-key', new Vector3(-0.4, -1, -0.6), scene)
   key.intensity = 1.0
 
+  const CAM_CHAR  = { alpha: Math.PI / 2,      beta: Math.PI / 2.15, radius: 4.6, target: new Vector3(1,    1.05, 0) }
+  const CAM_MOTO  = { alpha: -Math.PI / 4,     beta: Math.PI / 2.4,  radius: 3.8, target: new Vector3(-0.6, 0.3,  0) }
+  const CAM_PLATE = { alpha: Math.PI * 0.9,    beta: Math.PI / 2.35, radius: 1.5, target: new Vector3(0, 0.15, 0) }
+
+  const applyCamera = (preset) => {
+    camera.alpha  = preset.alpha
+    camera.beta   = preset.beta
+    camera.radius = preset.radius
+    camera.target.copyFrom(preset.target)
+  }
+
+  let animObs = null
+  const animateTo = (preset, durationMs, onDone) => {
+    if (animObs) { scene.onBeforeRenderObservable.remove(animObs); animObs = null }
+    const s = {
+      alpha: camera.alpha, beta: camera.beta, radius: camera.radius,
+      tx: camera.target.x, ty: camera.target.y, tz: camera.target.z,
+    }
+    let elapsed = 0
+    animObs = scene.onBeforeRenderObservable.add(() => {
+      elapsed += engine.getDeltaTime()
+      const p = Math.min(elapsed / durationMs, 1)
+      const e = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p
+      camera.alpha  = s.alpha  + (preset.alpha  - s.alpha)  * e
+      camera.beta   = s.beta   + (preset.beta   - s.beta)   * e
+      camera.radius = s.radius + (preset.radius - s.radius) * e
+      camera.target.set(
+        s.tx + (preset.target.x - s.tx) * e,
+        s.ty + (preset.target.y - s.ty) * e,
+        s.tz + (preset.target.z - s.tz) * e,
+      )
+      if (p >= 1) {
+        scene.onBeforeRenderObservable.remove(animObs)
+        animObs = null
+        onDone?.()
+      }
+    })
+  }
+
   const characters = Object.create(null)
   let current = null
+  let motoData = null
+  let currentMoto = null
+  let motoFrozen = false
   let autoRot = 0
+  let motoTime = 0
 
   const findFightIdle = (groups) => {
     const lc = (g) => g.name.toLowerCase()
@@ -735,23 +908,36 @@ function startStage(canvas) {
       root.rotationQuaternion = null
       root.rotation.set(0, 0, 0)
       root.scaling.setAll(id === 'George' ? 0.17 : 1)
-      // Désactiver toutes les anims, puis trouver fight_idle
       const groups = result.animationGroups
       groups.forEach((g) => g.stop())
       const anim = findFightIdle(groups)
-
-      // Masquer tant que pas sélectionné
       for (const m of result.meshes) m.setEnabled(false)
-
       characters[id] = { root, meshes: result.meshes, anim }
-
-      // Si on avait demandé ce perso avant la fin du chargement
-      if (pending === id) {
-        pending = null
-        applyCharacter(id)
-      }
+      if (pending === id) { pending = null; applyCharacter(id) }
     } catch (e) {
       console.warn('[mm-stage] échec chargement', file, e)
+    }
+  }
+
+  const loadMoto = async () => {
+    try {
+      const result = await SceneLoader.ImportMeshAsync(null, '/extragame/', 'motorbike.glb', scene)
+      const root = result.meshes[0]
+      root.name = 'mm-moto'
+      root.position.set(0, 0, 0)
+      root.rotationQuaternion = null
+      root.rotation.set(0, 0, 0)
+      root.scaling.setAll(0.55)
+      const groups = result.animationGroups
+      groups.forEach(g => g.stop())
+      const anim = groups.find(g => g.name.toLowerCase() === 'action')
+                ?? groups.find(g => g.name.toLowerCase().includes('action'))
+                ?? groups[0]
+      for (const m of result.meshes) m.setEnabled(false)
+      motoData = { root, meshes: result.meshes, anim }
+      if (pendingMoto) { pendingMoto = false; applyMoto() }
+    } catch (e) {
+      console.warn('[mm-stage] échec chargement motorbike.glb', e)
     }
   }
 
@@ -759,6 +945,12 @@ function startStage(canvas) {
   const applyCharacter = (id) => {
     const c = characters[id]
     if (!c) return false
+    // Cacher la moto si active
+    if (currentMoto) {
+      currentMoto.anim?.stop()
+      for (const m of currentMoto.meshes) m.setEnabled(false)
+      currentMoto = null
+    }
     if (current && current !== c) {
       current.anim?.stop()
       for (const m of current.meshes) m.setEnabled(false)
@@ -766,6 +958,23 @@ function startStage(canvas) {
     for (const m of c.meshes) m.setEnabled(true)
     c.anim?.start(true, 1.0)
     current = c
+    applyCamera(CAM_CHAR)
+    return true
+  }
+
+  let pendingMoto = false
+  const applyMoto = () => {
+    if (!motoData) return false
+    // Cacher le personnage actif
+    if (current) {
+      current.anim?.stop()
+      for (const m of current.meshes) m.setEnabled(false)
+      current = null
+    }
+    for (const m of motoData.meshes) m.setEnabled(true)
+    motoData.anim?.start(true, 1.0)
+    currentMoto = motoData
+    applyCamera(CAM_MOTO)
     return true
   }
 
@@ -773,15 +982,35 @@ function startStage(canvas) {
     if (!applyCharacter(id)) pending = id
   }
 
-  // Pré-charge les deux personnages
+  const setMoto = () => {
+    if (!applyMoto()) pendingMoto = true
+  }
+
+  // Pré-charge les personnages et la moto
   loadCharacter('George',   'George.glb')
   loadCharacter('stephane', 'stephane.glb')
+  loadMoto()
 
-  // Rotation continue
+  const zoomToPlate = () => {
+    motoFrozen = true
+    animateTo(CAM_PLATE, 1400)
+  }
+
+  const backToMoto = () => {
+    motoFrozen = false
+    animateTo(CAM_MOTO, 900)
+  }
+
+  // Rotation continue (figée pendant la vue plaque)
   scene.onBeforeRenderObservable.add(() => {
-    if (!current) return
-    autoRot += engine.getDeltaTime() * 0.0006
-    current.root.rotation.y = autoRot
+    const dt = engine.getDeltaTime()
+    if (currentMoto && !motoFrozen) {
+      motoTime += dt * 0.00035
+      currentMoto.root.rotation.y = Math.sin(motoTime) * 0.55
+    } else if (current) {
+      autoRot += dt * 0.0006
+      current.root.rotation.y = autoRot
+    }
   })
 
   engine.runRenderLoop(() => scene.render())
@@ -791,9 +1020,13 @@ function startStage(canvas) {
   let disposed = false
   return {
     setCharacter,
+    setMoto,
+    zoomToPlate,
+    backToMoto,
     stop() {
       if (disposed) return
       disposed = true
+      if (animObs) scene.onBeforeRenderObservable.remove(animObs)
       window.removeEventListener('resize', onResize)
       engine.stopRenderLoop()
       scene.dispose()

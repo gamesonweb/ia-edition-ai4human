@@ -110,7 +110,24 @@ async function startGame({ name = 'Player', character = 'George' } = {}) {
   const statsBar        = setupStatsBar({ playerName: name })
   const inventory       = setupInventoryBar(scene)
   const keybindings     = setupKeybindings()
-  const pauseButton     = setupPauseButton(scene, { engine, camera, onQuit: () => location.reload() })
+  const QUALITY_PRESETS = {
+    low:   { scale: 4.0,  fogStart: 15, fogEnd:  75 },
+    mid:   { scale: 1.75, fogStart: 14, fogEnd:  90 },
+    high:  { scale: 1.25, fogStart: 17, fogEnd: 120 },
+    extra: { scale: 1.0,  fogStart: 20, fogEnd: 180 },
+  }
+  const pauseButton     = setupPauseButton(scene, {
+    engine,
+    camera,
+    onQuit: () => location.reload(),
+    onQualityChange: (q) => {
+      const preset = QUALITY_PRESETS[q] ?? QUALITY_PRESETS.high
+      engine.setHardwareScalingLevel(preset.scale)
+      scene.fogStart = preset.fogStart
+      scene.fogEnd   = preset.fogEnd
+      try { localStorage.setItem('babylon-akira:gfx-scale', String(preset.scale)) } catch {}
+    },
+  })
   const graphics        = setupGraphicsSettings(engine)
   const playerStats     = setupPlayerStats()
   const teleport        = setupTeleport({ getHero: () => heroRef })

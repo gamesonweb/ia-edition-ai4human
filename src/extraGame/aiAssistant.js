@@ -1,5 +1,6 @@
-// ─── MOTO-AI — Panneau latéral style téléphone ───────────────────────────────
+// ─── MOTO-AI — Panneau cyberpunk terminal ─────────────────────────────────────
 import './aiAssistant.css'
+import { t } from '../minigame/tron/i18n.js'
 
 const RESPONSES = [
   {
@@ -94,36 +95,35 @@ export function createAIAssistant({ onClose, onCheat }) {
   const panel = document.createElement('div')
   panel.id = 'moto-ai-panel'
   panel.innerHTML = `
+    <div class="mai-corner-br"></div>
     <div class="mai-header">
       <div class="mai-header-left">
-        <div class="mai-avatar">◈</div>
+        <div class="mai-avatar"><i class="fa-solid fa-microchip"></i></div>
         <div>
           <div class="mai-name">MOTO-AI</div>
-          <div class="mai-status"><span class="mai-dot"></span>en ligne</div>
+          <div class="mai-status"><span class="mai-dot"></span>${t('ai.status')}</div>
         </div>
       </div>
-      <button class="mai-close" id="mai-close">✕</button>
+      <button class="mai-close" id="mai-close"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <div class="mai-sysbar">${t('ai.sysbar')}</div>
     <div class="mai-messages" id="mai-messages">
       <div class="mai-msg mai-msg-ai">
+        <div class="mai-prefix"><i class="fa-solid fa-bolt"></i> MOTO-AI</div>
         <div class="mai-bubble">
-          <strong>⚡ Super-pouvoirs disponibles :</strong><br><br>
-          ${Object.entries(CHEATS).map(([k, v]) =>
-            `• <strong>/${k}</strong> — ${v.label} <em style="color:rgba(0,247,255,0.5)">${v.duration !== '—' ? v.duration : ''}</em>`
-          ).join('<br>')}
-          <br><br>
-          <span style="color:rgba(255,255,255,0.35);font-size:11px">Ou posez une question sur le jeu.</span>
+          <strong>${t('ai.cheats_title')}</strong><br><br>
+          ${Object.keys(CHEATS).map(k =>
+            `<li><strong>/${k}</strong> &nbsp;—&nbsp; ${t('cheat.' + k + '.label')}</li>`
+          ).join('\n')}
+          <br><em style="color:rgba(255,255,255,0.25);font-size:10px;letter-spacing:1px">${t('ai.or_ask')}</em>
         </div>
         <div class="mai-time">${now()}</div>
       </div>
     </div>
     <div class="mai-input-area">
-      <input class="mai-input" id="mai-input" type="text" placeholder="Envoyer un message…" autocomplete="off" />
-      <button class="mai-send" id="mai-send">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
-        </svg>
-      </button>
+      <span class="mai-prompt-label">&gt;</span>
+      <input class="mai-input" id="mai-input" type="text" placeholder="${t('ai.placeholder')}" autocomplete="off" spellcheck="false" />
+      <button class="mai-send" id="mai-send"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   `
   document.body.appendChild(panel)
@@ -158,12 +158,15 @@ export function createAIAssistant({ onClose, onCheat }) {
 
       const cheat = CHEATS[code]
       if (cheat) {
-        addMsgSystem(`${cheat.label}`, `${cheat.desc}${cheat.duration !== '—' ? ` · <em>${cheat.duration}</em>` : ''}`)
+        addMsgSystem(
+          t(`cheat.${code}.label`),
+          `${t(`cheat.${code}.desc`)}${cheat.duration !== '—' ? ` · <em>${cheat.duration}</em>` : ''}`,
+        )
         onCheat?.(code)
         // Fermer le panel après un court délai pour voir le message de confirmation
         setTimeout(() => closePanel(), 900)
       } else {
-        addMsgRaw('ai', `Commande <strong>/${code}</strong> inconnue.`)
+        addMsgRaw('ai', t('ai.unknown_cmd', { code }))
       }
       return
     }
@@ -186,7 +189,9 @@ export function createAIAssistant({ onClose, onCheat }) {
   function addMsg(role, text) {
     const div = document.createElement('div')
     div.className = `mai-msg mai-msg-${role}`
+    const icon   = role === 'ai' ? '<i class="fa-solid fa-bolt"></i> MOTO-AI' : `<i class="fa-solid fa-user"></i> ${t('ai.pilot')}`
     div.innerHTML = `
+      <div class="mai-prefix">${icon}</div>
       <div class="mai-bubble">${role === 'ai' ? md(text) : esc(text)}</div>
       <div class="mai-time">${now()}</div>
     `
@@ -198,7 +203,12 @@ export function createAIAssistant({ onClose, onCheat }) {
   function addMsgRaw(role, html) {
     const div = document.createElement('div')
     div.className = `mai-msg mai-msg-${role}`
-    div.innerHTML = `<div class="mai-bubble">${html}</div><div class="mai-time">${now()}</div>`
+    const icon = role === 'ai' ? '<i class="fa-solid fa-bolt"></i> MOTO-AI' : `<i class="fa-solid fa-user"></i> ${t('ai.pilot')}`
+    div.innerHTML = `
+      <div class="mai-prefix">${icon}</div>
+      <div class="mai-bubble">${html}</div>
+      <div class="mai-time">${now()}</div>
+    `
     messagesEl.appendChild(div)
     scrollBot()
     return div
@@ -208,8 +218,9 @@ export function createAIAssistant({ onClose, onCheat }) {
     const div = document.createElement('div')
     div.className = 'mai-msg mai-msg-system'
     div.innerHTML = `
+      <div class="mai-prefix"><i class="fa-solid fa-bolt"></i> ${t('ai.system')}</div>
       <div class="mai-bubble mai-bubble-system">
-        <span class="mai-system-icon">✦</span>
+        <span class="mai-system-icon"><i class="fa-solid fa-check-circle"></i></span>
         <div>
           <div class="mai-system-title">${title}</div>
           <div class="mai-system-desc">${desc}</div>
@@ -226,10 +237,13 @@ export function createAIAssistant({ onClose, onCheat }) {
     const div = document.createElement('div')
     div.className = 'mai-msg mai-msg-ai'
     div.innerHTML = `
-      <div class="mai-bubble mai-typing-bubble">
-        <span class="mai-dot-anim"></span>
-        <span class="mai-dot-anim"></span>
-        <span class="mai-dot-anim"></span>
+      <div class="mai-prefix"><i class="fa-solid fa-bolt"></i> MOTO-AI</div>
+      <div class="mai-bubble">
+        <div class="mai-typing-bubble">
+          <span class="mai-dot-anim"></span>
+          <span class="mai-dot-anim"></span>
+          <span class="mai-dot-anim"></span>
+        </div>
       </div>
     `
     messagesEl.appendChild(div)
