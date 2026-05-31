@@ -38,7 +38,7 @@ Nous sommes trois étudiants réunis autour d'un objectif commun : concevoir **n
 Bien que chacun possède ses propres compétences, nous avons mis nos forces en commun afin de dépasser nos limites et mener à bien ce projet ambitieux 
 malgré le temps restreint dont nous disposions — après tout, nous sommes alternants !
 
-## 📹 Ressources & Tutoriels vidéo
+## Ressources & Tutoriels vidéo
 
 Voici l’ensemble de nos vidéos :
 
@@ -60,7 +60,7 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## ⚙️ Fonctionnalités
+## Fonctionnalités
 
 - **Monde 3D immersif** : Explorez des environnements cyberpunk avec une ville ouverte et des intérieurs détaillés
 - **Système de combat** : Tir de projectiles avec effets visuels (muzzle flash, impacts) et IA ennemie réactive
@@ -74,7 +74,7 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## 🗺️ Manches du jeu
+## Manches du jeu
 
 | # | Titre | Objectif |
 |---|-------|----------|
@@ -90,7 +90,7 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## 🎮 Contrôles
+## Contrôles
 
 | Action | Touche |
 |--------|--------|
@@ -106,7 +106,7 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## 🛠️ Stack Technique
+## Stack Technique
 
 | Catégorie | Technologie |
 |-----------|-------------|
@@ -120,9 +120,9 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## 🧠 Architecture Technique
+## Architecture Technique
 
-### 🧩 Systèmes principaux
+### Systèmes principaux
 
 - **Gestion des niveaux** : Chargement modulaire et asynchrone — chaque manche est un module ES indépendant (`loadLevelN`)
 - **Système de tir** : Projectiles 3D avec détection de collision distance-based, effets de flash et d'impact
@@ -133,7 +133,7 @@ Voici l’ensemble de nos vidéos :
 - **Registre d'ennemis** : `scene.metadata.ennemiHandles[]` centralisé pour la détection multi-cible
 - **Système de collectibles** : Spawn, animation de flottement et ramassage avec rayon configurable
 
-### 🚀 Optimisations des performances
+### Optimisations des performances
 
 - **Chargement asynchrone** : Assets chargés à la demande avec `SceneLoader.ImportMeshAsync`, pas de blocage
 - **Spawn validé** : Vérification rayon (ray cast) avant spawn ennemi — évite les unités bloquées dans les murs
@@ -145,7 +145,7 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
-## 🐛 Galères & Solutions
+## Galères & Solutions
 
 ### IA bloquée dans les bâtiments
 Les ennemis pouvaient spawn derrière des murs, rendant la manche impossible à terminer. **Solution** : validation par ray cast avant chaque spawn — si le rayon est bloqué, la position est rejetée et recalculée.
@@ -161,7 +161,219 @@ Les overlays de navigation (hints 3D, indices visuels) généraient des milliers
 
 ---
 
-## 💾 Installation
+## Systèmes IA et Architecture
+### 1. ennemiIA.js — Ennemis humanoïdes (Niveau 6)
+
+Les ennemis humanoïdes constituent la principale menace lors des phases de combat. Leur comportement est piloté par une machine à états finie (FSM) permettant des réactions dynamiques selon la situation du joueur.
+
+#### États
+
+text WANDER → PURSUIT → SHOOT → RETREAT → DEAD 
+
+- WANDER : déplacement aléatoire dans la zone assignée.
+- PURSUIT : poursuite du joueur lorsqu'il est détecté.
+- SHOOT : attaque à distance lorsque la cible est à portée.
+- RETREAT : repli tactique lorsque le joueur est trop proche.
+- DEAD : désactivation complète de l'entité.
+
+#### Profils d'ennemis
+
+| Modèle | PV | Vitesse | Détection | Tir | Dégâts |
+|---------|---------|---------|---------|---------|---------|
+| ennemiIA_1.glb (Tank) | 80 | 6 u/s | 55 u | 28 u | 10 |
+| ennemiIA_3.glb (Scout) | 40 | 11 u/s | 65 u | 22 u | 6 |
+
+#### Implémentation technique
+
+- Déplacement via moveWithCollisions()
+- Orientation avec atan2()
+- Projectiles sphériques
+- Zones de patrouille configurables
+- Barres de vie via DynamicTexture
+- Affichage Billboard 3D
+- Gestion centralisée dans scene.metadata.ennemiHandles[]
+
+---
+
+### 2. robot.js — Robot allié / ennemi (Niveau 2)
+
+Ce robot possède le système IA le plus complexe du jeu principal. Selon la progression du joueur, il peut devenir un ennemi puis un allié temporaire.
+
+#### États
+
+text IDLE → PURSUIT → ATTACK → RETREAT → DEAD → FOLLOW → DEPOSITED 
+
+#### Particularités
+
+- Peut être récupéré grâce à la touche B
+- Suit le joueur une fois capturé
+- Accompagne le joueur jusqu'à la zone de dépôt
+
+#### Mode FOLLOW
+
+Lorsque le robot est récupéré :
+
+- Positionné à environ 2.5 unités du joueur
+- Vitesse de rattrapage augmentée
+- Synchronisation permanente avec les déplacements du héros
+
+#### Registre
+
+javascript scene.metadata.robotHandle 
+
+---
+
+### 3. police.js — Police IA (Niveau 1)
+
+La police fonctionne différemment des ennemis classiques.
+
+Elle ne possède pas de FSM complète mais repose sur un système de surveillance basé sur un cône de vision.
+
+#### Fonctionnement
+
+- Patrouille entre deux points
+- Surveillance permanente
+- Détection du joueur dans le champ visuel
+
+#### Paramètres
+
+| Paramètre | Valeur |
+|------------|------------|
+| Angle de vision | 60° |
+| Portée | 50 unités |
+| Dégâts | 100 PV/s |
+
+#### Détection
+
+La visibilité est calculée grâce à un produit scalaire sur le plan XZ.
+
+Cela permet de déterminer rapidement si le joueur se trouve dans le cône de vision du policier.
+
+---
+
+### 4. pnjManager.js — Circulation et trafic urbain
+
+Ce système gère l'ensemble des véhicules présents dans la ville.
+
+Son objectif est de rendre l'environnement plus vivant sans impacter les performances.
+
+#### Fonctionnalités
+
+- Véhicules civils
+- Scooters autonomes
+- Déplacements A ↔ B
+- Spawn automatisé
+
+#### Optimisations
+
+- Utilisation de instantiateHierarchy()
+- Culling automatique à 300 unités
+- Aucune logique de combat
+- Aucun calcul de détection joueur
+
+---
+
+# 🏍️ Mini-jeu Tron — 3 systèmes IA
+
+Le mini-jeu Tron utilise des systèmes IA indépendants du jeu principal.
+
+## 1. tronScene.js — Adversaires IA
+
+Trois niveaux de difficulté sont disponibles.
+
+| Difficulté | Vitesse | Vitesse max | Rotation |
+|-------------|-------------|-------------|-------------|
+| Facile | ×0.70 | ×0.80 | 0.040 |
+| Moyen | ×0.90 | ×1.10 | 0.055 |
+| Difficile | ×1.15 | ×1.50 | 0.075 |
+
+### Navigation
+
+Les IA disposent de deux modes :
+
+#### Tracé enregistré
+
+- Recherche du point le plus proche
+- Anticipation des virages
+- Adaptation automatique de la vitesse
+
+#### Checkpoints de secours
+
+javascript AI_ROUTE = [7,6,5,4,3,2,1,0] 
+
+Utilisé lorsqu'aucun tracé valide n'est disponible.
+
+### Pilotage
+
+- Calcul de direction via atan2()
+- Interpolation du yaw
+- Gestion de l'accélération
+- Gestion du freinage
+- Gravité
+- moveWithCollisions()
+
+---
+
+## 2. Traînées mortelles
+
+Les adversaires peuvent générer des traînées énergétiques derrière eux.
+
+Ces obstacles temporaires représentent la principale difficulté du mini-jeu.
+
+### Paramètres
+
+| Paramètre | Valeur |
+|------------|------------|
+| Probabilité | 0.5 % / frame |
+| Cooldown | 8 secondes |
+| Durée | 1 à 3 secondes |
+| Distance de collision | 1.8 unité |
+
+### Fonctionnement
+
+- Déclenchement uniquement lorsque l'IA est devant le joueur
+- Création d'un mur temporaire
+- Collision mortelle
+
+---
+
+## 3. aiAssistant.js — Assistant IA
+
+L'assistant IA est accessible grâce à la touche K.
+
+Il permet d'activer plusieurs fonctionnalités spéciales destinées au gameplay ou aux tests.
+
+### Exemples
+
+- Gel des IA
+- Mode Turbo
+- Slow Motion
+- Tour supplémentaire
+- Modifications temporaires des règles de jeu
+
+---
+
+# ⚡ Performances et optimisation IA
+
+Afin de conserver une expérience fluide malgré la taille de la carte et le nombre d'entités présentes simultanément, plusieurs optimisations ont été mises en place :
+
+- Chargement asynchrone des modèles GLB
+- Validation des points de spawn par raycast
+- Culling automatique des PNJ éloignés
+- Nettoyage mémoire via dispose()
+- Réduction du nombre de draw calls
+- Mutualisation des registres IA dans scene.metadata
+- Limitation de la distance de rendu à 300 unités
+
+Ces optimisations ont permis de faire évoluer les performances du projet d'environ 40 FPS à plus de 120 FPS sur Mac Mini M4, tout en conservant un environnement dense et interactif.
+
+---
+
+<img width="8192" height="1859" alt="diagram_blackout" src="https://github.com/user-attachments/assets/679ae799-48be-4dc2-b037-4ea283a34386" />
+
+---
+
+## Installation
 
 ```bash
 # Cloner le dépôt
@@ -190,7 +402,7 @@ npm run build
 
 ---
 
-## 📋 Prérequis
+## Prérequis
 
 - Navigateur moderne avec support **WebGL 2** — **Chrome recommandé**
 - Clavier AZERTY/QWERTY + souris
@@ -198,7 +410,7 @@ npm run build
 
 ---
 
-## 🧩 Assets utilisés
+## Assets utilisés
 
 ### Personnages & Ennemis
 - **George** (personnages jouables) : [George.glb](https://sketchfab.com/3d-models/bearded-man-low-poly-animated-5718a53d18a142f686b1d9f02a637773)
