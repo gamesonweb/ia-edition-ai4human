@@ -42,6 +42,7 @@ malgré le temps restreint dont nous disposions — après tout, nous sommes alt
 
 Voici l’ensemble de nos vidéos :
 
+- [Trailer Officiel — BlackOut](https://youtu.be/CT76wy0uQuk)
 - [Introduction](https://youtu.be/4EoNDClSL2o)
 - [Level 1 - Faux laissez-passer](https://youtu.be/Eqwl_U9HI7c)
 - [Level 2 - Combat du compagnon infecté](https://youtu.be/qN44rlkKwMw)
@@ -57,7 +58,7 @@ Voici l’ensemble de nos vidéos :
 
 > [!NOTE]
 > Tous les niveaux sont enregistrés et publiés sur YouTube.
-
+> Nous recommandons de commencer par le **Trailer Officiel** & **l'introduction** afin de découvrir rapidement l'univers de BlackOut avant de visionner les différents niveaux.
 ---
 
 ## Fonctionnalités
