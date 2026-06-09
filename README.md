@@ -75,6 +75,35 @@ Voici l’ensemble de nos vidéos :
 
 ---
 
+## Pourquoi BLACKOUT s'inscrit dans le thème de l'IA
+
+BLACKOUT n'est pas un jeu "sur l'IA" parce qu'il contient des ennemis pilotés par des machines à états — pour nous, ce serait un raccourci.
+Ce qui ancre véritablement le jeu dans le thème, c'est son **propos** et la **réflexion** qu'il propose au joueur.
+
+### Une fiction qui interroge notre dépendance
+
+L'histoire de BLACKOUT se déroule dans un monde où les IA ont fini par prendre le contrôle — non pas à la suite d'une révolte, mais à cause d'une **dépendance humaine devenue totale**.
+Tout reposait sur elles : énergie, transports, surveillance, communications.
+Un **simple virus** a suffi à corrompre leurs systèmes et à transformer ces outils du quotidien en menace existentielle.
+
+C'est une fiction, mais aussi un miroir tendu à la société actuelle : que se passerait-il si l'on confiait *tout* à des systèmes que l'on ne maîtrise plus ?
+
+### L'IA au cœur du gameplay narratif
+
+Plusieurs manches confrontent directement le joueur aux **mécaniques de fonctionnement des IA** :
+- **Manche 7 — Puzzle d'accréditation ML** : résolution d'une énigme inspirée de l'apprentissage machine pour obtenir l'accès.
+- **Manche 8 — Synchronisation d'agents** : scan et décryptage de données issues d'agents robots, en miroir des protocoles d'inférence.
+- **Manche 4 — Piratage du système central** : exploitation des failles d'un système autonome corrompu.
+
+Ces séquences ne sont pas de simples mini-jeux : elles invitent le joueur à **comprendre** ce qu'est une IA pour mieux la contourner.
+
+### Une présence technique, mais assumée comme secondaire
+
+Le jeu intègre bien sûr des IA techniques (FSM ennemies, navigation, comportements adverses dans le mini-jeu Tron, assistant IA `aiAssistant.js`).
+Mais **nous ne considérons pas ces systèmes comme la justification principale** du thème : ce sont des outils de gameplay, pas un message.
+
+Le vrai sujet de BLACKOUT, c'est la **réflexion sur notre rapport à l'IA** — et ce que nous risquons de perdre si nous lui déléguons tout.
+
 ## Manches du jeu
 
 | # | Titre | Objectif |
